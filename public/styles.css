@@ -94,6 +94,7 @@ label { display: block; font-weight: 600; margin: 12px 0 4px; }
 }
 .badge.owner { background: #facc15; color: #231a00; }
 .badge.coowner { background: #c084fc; color: #2a0a44; }
+.badge.admin { background: #34d399; color: #06281c; }
 .badge.verified { background: var(--accent); color: #06130a; }
 .badge.ballpark { background: var(--warn); color: #241a00; }
 
