@@ -888,7 +888,7 @@ app.get('/api/rarity', requireAccess, (req, res) => {
     const img = r.name === 'Crystune' ? null : (r.img ? `/img/brainrots/${r.img}` : null);
     return { name: r.name, pct: o ? o.pct : r.pct, tier: 'Absolute', image: img, overridden: !!o };
   });
-  const goat = { ...brainrotsData.rarityGoat, tier: 'GOAT', image: '/img/skibidi-toilet.png' };
+  const goat = { ...brainrotsData.rarityGoat, tier: 'GOAT', image: '/img/skibidi-toilet-v2.png' };
   res.json({
     eternal, absolute, goat,
     note: 'Spawn chances at Luck Tier 13 (in-game index, Nov 22, 2026). Skibidi Toilet is the only GOAT brainrot: its fixed spawn chance is 0.000001% and it ignores all events, luck and multipliers; the index screen shows it at 0.0002% at Tier 13.',
