@@ -66,6 +66,22 @@ After setting env vars, Render redeploys automatically.
 - Log in as the owner (`pgevil22@gmail.com`) to confirm the Admin panel
   appears.
 
+## Pushing code updates (learned Nov 22, 2026)
+
+- Code is pushed to the GitHub repo (`brainrottrades/brainrot-trades`,
+  branch `master`) via the GitHub web UI, one commit per file, full
+  content replacement — the sandbox shell has no git auth.
+- **Auto-deploy does NOT fire on commit** even though the service shows
+  Auto-Deploy "On Commit": after pushing, check the Render deploys page
+  and if no new deploy started within a few minutes, use **Manual
+  Deploy → Deploy latest commit**. (Confirmed Nov 22, 2026: the 5a8844b
+  push sat for 9 minutes with no deploy until a manual deploy ran it.)
+- Every deploy **wipes the database** (free-tier ephemeral filesystem),
+  so accounts are lost on each redeploy — warn Patrick before pushing
+  once members exist.
+- After a deploy, verify with a cache-busted fetch: a plain fetch of
+  `/app.js` right after a deploy can return the previous version.
+
 ## Free-tier caveats (tell Patrick plainly)
 
 - The service **sleeps after 15 minutes with no traffic**; the first
