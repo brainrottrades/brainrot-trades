@@ -230,6 +230,7 @@ CREATE TABLE IF NOT EXISTS sale_comments (
 // The ALTER is idempotent — it throws if the column already exists.
 try { db.exec('ALTER TABLE users ADD COLUMN google_id TEXT'); } catch (e) { /* column already exists */ }
 db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_users_google_id ON users(google_id)');
+try { db.exec('ALTER TABLE sale_listings ADD COLUMN mutation TEXT'); } catch (e) { /* column already exists */ }
 
 // ---------- mail ----------
 // SendGrid (HTTPS) is preferred when configured — Render blocks outbound
@@ -401,7 +402,7 @@ function findItem(id) {
 
 // ---------- app ----------
 const app = express();
-app.use(express.json({ limit: '1mb' }));
+app.use(express.json({ limit: '2mb' }));
 app.use(express.urlencoded({ extended: false }));
 app.use(express.static(path.join(ROOT, 'public'), { maxAge: '1h' }));
 
@@ -772,15 +773,38 @@ app.get('/api/sales', requireAccess, (req, res) => {
   }) });
 });
 app.post('/api/sales', requireAccess, (req, res) => {
-  const { brainrotId, priceUsd, description, imageUrl } = req.body || {};
+  const { brainrotId, priceUsd, description, imageUrl, mutation } = req.body || {};
   const item = findItem(brainrotId);
   if (!item) return res.status(400).json({ error: 'Pick a brainrot to sell.' });
   const price = Number(priceUsd);
   if (!price || price <= 0 || price > 100000) return res.status(400).json({ error: 'Enter a sensible price in USD.' });
-  if (imageUrl && !/^https?:\/\//.test(imageUrl)) return res.status(400).json({ error: 'Image must be a full http(s) URL, or leave it blank to use the game picture.' });
-  const info = db.prepare('INSERT INTO sale_listings (user_id, username, brainrot_id, price_usd, description, image_url, created_at) VALUES (?,?,?,?,?,?,?)')
-    .run(req.user.id, req.user.username, brainrotId, price, String(description || '').slice(0, 500), imageUrl || null, nowIso());
+  if (imageUrl && !/^https?:\/\//.test(imageUrl) && !imageUrl.startsWith('/uploads/')) return res.status(400).json({ error: 'Image must be a full http(s) URL, or leave it blank to use the game picture.' });
+  const mut = (brainrotsData.mutations || []).includes(mutation) ? mutation : 'Default';
+  const info = db.prepare('INSERT INTO sale_listings (user_id, username, brainrot_id, price_usd, description, image_url, mutation, created_at) VALUES (?,?,?,?,?,?,?,?)')
+    .run(req.user.id, req.user.username, brainrotId, price, String(description || '').slice(0, 500), imageUrl || null, mut, nowIso());
   res.json({ ok: true, id: Number(info.lastInsertRowid) });
+});
+// ---------- sale picture upload ----------
+// Sellers upload a picture (shrunk in the browser first). Stored under
+// public/uploads/ and served as a normal file. Free-tier note: uploads live
+// on the server disk, so they disappear on redeploy — same as listings.
+const UPLOAD_DIR = path.join(ROOT, 'public', 'uploads');
+const UPLOAD_MIME = { 'image/jpeg': '.jpg', 'image/png': '.png', 'image/webp': '.webp', 'image/gif': '.gif' };
+app.post('/api/sales/upload-image', requireAccess, (req, res) => {
+  const data = String((req.body || {}).data || '');
+  const m = data.match(/^data:(image\/jpeg|image\/png|image\/webp|image\/gif);base64,([A-Za-z0-9+/=]+)$/);
+  if (!m) return res.status(400).json({ error: 'Upload a JPEG, PNG, WebP or GIF picture.' });
+  const buf = Buffer.from(m[2], 'base64');
+  if (buf.length === 0 || buf.length > 1024 * 1024) return res.status(400).json({ error: 'Picture is too big (max 1MB after shrinking).' });
+  try {
+    fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+    const name = crypto.randomBytes(12).toString('hex') + UPLOAD_MIME[m[1]];
+    fs.writeFileSync(path.join(UPLOAD_DIR, name), buf);
+    res.json({ ok: true, url: '/uploads/' + name });
+  } catch (e) {
+    console.error('[upload] failed:', e.message);
+    res.status(500).json({ error: 'Could not save the picture. Try again.' });
+  }
 });
 app.post('/api/sales/:id/close', requireAuth, (req, res) => {
   const s = db.prepare('SELECT * FROM sale_listings WHERE id = ?').get(req.params.id);
