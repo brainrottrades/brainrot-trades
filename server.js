@@ -105,6 +105,10 @@ CREATE TABLE IF NOT EXISTS sessions (
   created_at TEXT NOT NULL,
   expires_at TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS oauth_states (
+  state TEXT PRIMARY KEY,
+  created_at TEXT NOT NULL
+);
 CREATE TABLE IF NOT EXISTS verifications (
   email TEXT PRIMARY KEY,
   code TEXT NOT NULL,
@@ -577,18 +581,30 @@ function googleAuthUrl(state) {
 app.get('/api/auth/google', (req, res) => {
   if (!googleAuthEnabled) return res.status(400).send('Google sign-in is not configured on this server.');
   const state = crypto.randomBytes(16).toString('hex');
-  res.setHeader('Set-Cookie', `bt_oauth_state=${state}; HttpOnly; Path=/; Max-Age=600; SameSite=Lax`);
+  // Remember the state server-side too (single-use, 30 min): some browsers
+  // drop the state cookie on the way back from Google, which used to fail
+  // the sign-in silently at the state check. The cookie is still checked first.
+  db.prepare('DELETE FROM oauth_states WHERE created_at < ?').run(new Date(Date.now() - 30 * 60 * 1000).toISOString());
+  db.prepare('INSERT INTO oauth_states (state, created_at) VALUES (?,?)').run(state, nowIso());
+  res.setHeader('Set-Cookie', `bt_oauth_state=${state}; HttpOnly; Path=/; Max-Age=1800; SameSite=Lax`);
   res.redirect(googleAuthUrl(state));
 });
 app.get('/api/auth/google/callback', async (req, res) => {
-  const fail = () => res.redirect('/#/login?google=failed');
+  const fail = why => { if (why) console.error('[google] sign-in failed:', why); return res.redirect('/#/login?google=failed'); };
   try {
-    if (!googleAuthEnabled) return fail();
-    if (req.query.error) return fail();
+    if (!googleAuthEnabled) return fail('google auth not configured');
+    if (req.query.error) return fail('google returned error: ' + req.query.error);
     const stateCookie = (req.headers.cookie || '').split(';').map(s => s.trim())
       .find(s => s.startsWith('bt_oauth_state='));
     const stateVal = stateCookie ? decodeURIComponent(stateCookie.slice('bt_oauth_state='.length)) : null;
-    if (!stateVal || stateVal !== req.query.state || !req.query.code) return fail();
+    const qState = req.query.state;
+    // State check: the cookie is checked first; the server-side record is
+    // the fallback for browsers that drop the cookie on the way back.
+    // Either way the state is single-use and expires after 30 minutes.
+    const dbState = qState ? db.prepare('SELECT state FROM oauth_states WHERE state = ?').get(qState) : null;
+    if (dbState) db.prepare('DELETE FROM oauth_states WHERE state = ?').run(qState);
+    const stateOk = (stateVal && stateVal === qState) || !!dbState;
+    if (!stateOk || !req.query.code) return fail('state check failed (cookie ' + (stateVal ? 'present' : 'missing') + ', server record ' + (dbState ? 'found' : 'not found') + ')');
     res.setHeader('Set-Cookie', 'bt_oauth_state=; HttpOnly; Path=/; Max-Age=0; SameSite=Lax');
     const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
       method: 'POST',
