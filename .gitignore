@@ -1,5 +1,6 @@
 node_modules/
 data/app.db
 config/email.json
+public/uploads/
 .env
 *.log
