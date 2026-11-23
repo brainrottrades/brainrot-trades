@@ -7,8 +7,9 @@ deploy. Setup (Render dashboard, service `brainrot-trades`):
 
 - **Plan: Starter ($7/month)** — paid instances never sleep, and only paid
   instances can attach a disk. The card already on file is charged.
-- **Persistent disk: 1 GB ($0.25/month), mount path `/data`** — the
+- **Persistent disk: 50 GB ($12.50/month), mount path `/data`** — the
   database and uploaded pictures live on it and survive every deploy.
+  (Patrick picked 50 GB on Nov 23, 2026; disks are $0.25/GB/month.)
 - **Env var `DATA_DIR=/data`** — server.js stores `app.db` and uploads
   under `DATA_DIR` when it is set; without it, data lives in `./data`
   (local dev, and the old free-tier behaviour).
@@ -19,7 +20,7 @@ deploy. Setup (Render dashboard, service `brainrot-trades`):
   live site, then run a second deploy of the same commit — the account must
   still log in afterwards. (Starter also has shell access, so the disk can
   be checked directly: the file is `/data/app.db`.)
-- Total: about **$7.25/month**. Uploaded sale pictures now survive deploys
+- Total: about **$19.50/month** (Starter $7 + 50 GB disk $12.50). Uploaded sale pictures now survive deploys
   too (they are stored under `DATA_DIR/uploads` and served at `/uploads`).
 
 The code is finished, verified locally, and committed as a git repo in this
