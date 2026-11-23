@@ -82,6 +82,32 @@ const get = path => api(path);
 const post = (path, body) => api(path, { method: 'POST', body: JSON.stringify(body || {}) });
 const del = path => api(path, { method: 'DELETE' });
 
+// ---------- referrals ----------
+// A ?ref=<username> invite link: remember who invited this visitor so the
+// sign-up (email or Google) credits the inviter.
+function storedRef() {
+  try { return (localStorage.getItem('bt_ref') || '').trim() || null; } catch (e) { return null; }
+}
+function captureRef() {
+  try {
+    const q = new URLSearchParams(location.search);
+    const r = (q.get('ref') || '').trim();
+    if (r) localStorage.setItem('bt_ref', r);
+  } catch (e) { /* ignore */ }
+}
+function googleAuthHref() {
+  const r = storedRef();
+  return '/api/auth/google' + (r ? '?ref=' + encodeURIComponent(r) : '');
+}
+function copyText(t) {
+  if (navigator.clipboard && navigator.clipboard.writeText) return navigator.clipboard.writeText(t);
+  const ta = document.createElement('textarea');
+  ta.value = t; document.body.appendChild(ta); ta.select();
+  try { document.execCommand('copy'); } catch (e) { /* ignore */ }
+  document.body.removeChild(ta);
+  return Promise.resolve();
+}
+
 // ---------- state ----------
 const state = {
   me: null,            // {id, username, email, verified, badge, isAdmin, hasAccess, subscription}
@@ -126,6 +152,7 @@ function renderTop() {
 
 const NAV = [
   { route: 'home', label: 'Home', ico: '🏠' },
+  { route: 'giveaway', label: 'Giveaway', ico: '🎁' },
   { route: 'prices', label: 'Prices', ico: '💲' },
   { route: 'checker', label: 'Checker', ico: '⚖️' },
   { route: 'rarity', label: 'Rarity', ico: '⭐' },
@@ -220,7 +247,7 @@ ROUTES.home = async function () {
   try { preview = (await get('/api/preview')).items; } catch (e) { preview = []; }
   const price = state.cfg ? state.cfg.priceUsd : 3;
   const feats = [
-    ['Price list', 'All 77 Eternal brainrots priced, with pictures — every brainrot has a ballpark price.'],
+    ['Price list', 'All 76 Eternal brainrots priced, with pictures — every brainrot has a ballpark price.'],
     ['Trade checker', 'Check any brainrot by mutation and traits, and compare two brainrots to see if a trade is worth it.'],
     ['Rarity chart', 'Every Eternal ranked least rarest to rarest, plus Absolute and GOAT rarities.'],
     ['Live chat', 'Talk with other players and organise trades in real time.'],
@@ -240,6 +267,7 @@ ROUTES.home = async function () {
       ? '<p><a class="btn" href="#/prices">Open the price list</a> <a class="btn secondary" href="#/sales">Sell a brainrot</a></p>'
       : '<p><a class="btn" href="#/signup">Sign up</a> <a class="btn secondary" href="#/login">Log in</a></p>') +
     '</section>' +
+    '<div class="card"><h2>🎁 Giveaway</h2><p><strong>Invite 5 friends, get in the raffle.</strong> Share your invite link — every friend who joins and gets verified counts, and your name goes on the board. <a href="#/giveaway">See the giveaway board</a></p></div>' +
     '<div class="card"><h2>What you get</h2><ul class="feature-list">' +
     feats.map(f => '<li><strong>' + (f[2] ? '<a href="#/' + f[2] + '">' + esc(f[0]) + '</a>' : esc(f[0])) + '</strong><br><span class="muted">' + esc(f[1]) + '</span></li>').join('') +
     '</ul></div>' +
@@ -249,8 +277,8 @@ ROUTES.home = async function () {
         '<div class="price">' + moneyRange(i.typicalLow, i.typicalHigh) + '</div>' +
         (i.ballpark ? ' <span class="badge ballpark">BALLPARK</span>' : '') +
         '</div></div>').join('') +
-      '</div><p class="muted small">Sample only — the full list of 77 brainrots is for members.</p>' +
-      (hasAccess() ? '' : '<p><a class="btn" href="#/signup">See all 77 — ' + (state.cfg && state.cfg.trialAvailable ? 'first month free' : 'subscribe $' + price + '/month') + '</a></p>') +
+      '</div><p class="muted small">Sample only — the full list of 76 brainrots is for members.</p>' +
+      (hasAccess() ? '' : '<p><a class="btn" href="#/signup">See all 76 — ' + (state.cfg && state.cfg.trialAvailable ? 'first month free' : 'subscribe $' + price + '/month') + '</a></p>') +
       '</div>' : '') +
     '<div class="card"><h2>How it works</h2><ol class="steps">' +
     '<li><strong>Sign up</strong> — pick a username and email.</li>' +
@@ -262,17 +290,76 @@ ROUTES.home = async function () {
     finePrintHtml();
 };
 
+// ---------- giveaway ----------
+ROUTES.giveaway = async function () {
+  if (!loggedIn()) {
+    view.innerHTML = '<div class="card"><h1>🎁 Giveaway</h1>' +
+      '<p><strong>Invite 5 friends, get in the raffle.</strong></p>' +
+      '<p class="muted">Share your invite link. Every friend who signs up through it and gets verified counts toward your 5. Once 5 friends have joined, your name goes on the board below and you\'re in the draw.</p>' +
+      '<p><a class="btn" href="#/signup">Sign up to get your invite link</a> <a class="btn secondary" href="#/login">Log in</a></p></div>' + finePrintHtml();
+    return;
+  }
+  const mine = await get('/api/referrals').catch(() => null);
+  const board = await get('/api/giveaway').catch(() => null);
+  const me = state.me;
+  const count = mine ? mine.count : 0;
+  const needed = (board && board.needed) || 5;
+  const entered = !!(mine && mine.entered);
+  view.innerHTML =
+    '<div class="card"><h1>🎁 Giveaway</h1>' +
+    '<p><strong>Invite ' + needed + ' friends, get in the raffle.</strong></p>' +
+    '<ol class="steps">' +
+    '<li><strong>Share your invite link</strong> — it\'s yours alone, below.</li>' +
+    '<li><strong>Friends sign up through it</strong> — they count once their account is verified.</li>' +
+    '<li><strong>At ' + needed + ' friends, your name goes on the board</strong> — and you\'re in the draw.</li>' +
+    '</ol>' +
+    '<p class="muted small">One account per email, and you can\'t invite yourself — so every name on the board earned it.</p></div>' +
+    (mine
+      ? '<div class="card"><h2>Your invite link</h2>' +
+        '<p><input readonly value="' + esc(mine.link) + '" id="giveawayLink" style="width:100%"></p>' +
+        '<p><button class="btn" id="copyGiveawayLink">Copy link</button> <span id="copyGiveawayMsg" class="muted"></span></p>' +
+        '<p><strong>' + count + ' / ' + needed + '</strong> friends joined' +
+        (mine.referrals && mine.referrals.length ? ' — ' + mine.referrals.map(r => esc(r.username)).join(', ') : '') + '</p>' +
+        (entered
+          ? '<p><strong>🎉 You\'re in the raffle!</strong> Your name is on the board below.</p>'
+          : '<p class="muted">Invite ' + (needed - count) + ' more friend' + ((needed - count) === 1 ? '' : 's') + ' to get your name on the board.</p>') +
+        '</div>'
+      : '<div class="card"><div class="error">Couldn\'t load your invite link. Try again.</div></div>') +
+    '<div class="card"><h2>Who\'s in the raffle</h2>' +
+    (board && board.entered.length
+      ? '<p class="muted">' + board.totalEntered + ' member' + (board.totalEntered === 1 ? '' : 's') + ' in the draw.</p>' +
+        board.entered.map(e =>
+          '<div class="spread"><span><strong>' + esc(e.username) + '</strong>' + badgeHtml(e.badge) +
+          (e.id === me.id ? ' <span class="badge">YOU</span>' : '') + '</span>' +
+          '<span class="muted small">' + e.count + ' invites</span></div>').join('')
+      : '<p class="muted">Nobody is in yet — invite ' + needed + ' friends and be the first name on the board.</p>') +
+    '</div>' +
+    (board && board.draws && board.draws.length
+      ? '<div class="card"><h2>Past winners</h2>' +
+        board.draws.map(d => '<p><strong>' + esc(d.winner_username) + '</strong> <span class="muted small">— drawn ' + esc(new Date(d.drawn_at).toLocaleDateString()) + ' by ' + esc(d.drawn_by) + '</span></p>').join('') +
+        '</div>'
+      : '') +
+    finePrintHtml();
+  const cb = $('#copyGiveawayLink');
+  if (cb) cb.onclick = async () => {
+    try { await copyText($('#giveawayLink').value); $('#copyGiveawayMsg').textContent = 'Copied!'; }
+    catch (e) { $('#copyGiveawayMsg').textContent = 'Copy failed — long-press the link to copy it.'; }
+  };
+};
+
 // ---------- auth ----------
 function authCard(title, inner) {
   return '<div class="card"><h1>' + esc(title) + '</h1>' + inner + '</div>' + finePrintHtml();
 }
 ROUTES.signup = async function () {
+  const ref = storedRef();
+  const refNote = ref ? '<div class="success">Invited by <strong>' + esc(ref) + '</strong> — they get credit when you join and verify.</div>' : '';
   const googleBtn = (state.cfg && state.cfg.googleAuthEnabled)
-    ? '<p><a class="btn block" href="/api/auth/google">Continue with Google</a></p>'
+    ? '<p><a class="btn block" href="' + googleAuthHref() + '">Continue with Google</a></p>'
       + '<p class="form-note">Google verifies your email instantly — no code, no waiting. No Google account? Sign up below instead.</p>'
     : '';
   view.innerHTML = authCard('Sign up',
-    googleBtn +
+    refNote + googleBtn +
     '<form id="signupForm">' +
     '<label for="suUser">Username</label><input id="suUser" required minlength="3" maxlength="24" autocomplete="username" placeholder="Your display name">' +
     '<label for="suEmail">Email</label><input id="suEmail" type="email" required autocomplete="email" placeholder="you@example.com">' +
@@ -286,7 +373,7 @@ ROUTES.signup = async function () {
     const msg = $('#formMsg');
     try {
       const r = await post('/api/auth/register', {
-        username: $('#suUser').value.trim(), email: $('#suEmail').value.trim(), password: $('#suPass').value,
+        username: $('#suUser').value.trim(), email: $('#suEmail').value.trim(), password: $('#suPass').value, ref: storedRef(),
       });
       if (r.user) { await loadMe(); toast(r.message || 'Account created.'); go('home'); return; }
       msg.innerHTML = '<div class="success">' + esc(r.message || 'Account created. The owner will approve it.') + '</div>';
@@ -298,7 +385,7 @@ ROUTES.login = async function (note) {
   const params = new URLSearchParams(location.hash.split('?')[1] || '');
   const googleFailed = params.get('google') === 'failed';
   const googleBtn = (state.cfg && state.cfg.googleAuthEnabled)
-    ? '<p><a class="btn block" href="/api/auth/google">Continue with Google</a></p>' : '';
+    ? '<p><a class="btn block" href="' + googleAuthHref() + '">Continue with Google</a></p>' : '';
   view.innerHTML = authCard('Log in',
     (googleFailed ? '<div class="error">Google sign-in did not work. Try again, or log in with your email instead.</div>' : '') +
     (typeof note === 'string' && note ? '<div class="error">' + esc(note) + '</div>' : '') +
@@ -456,7 +543,7 @@ ROUTES.prices = async function () {
   const items = await ensureItems();
   view.innerHTML =
     '<div class="card"><h1>Price list</h1>' +
-    '<p class="muted">All 77 Eternal brainrots. Prices are sellers’ asking prices in USD (Nov 2026 snapshot), not sold prices. '
+    '<p class="muted">All 76 Eternal brainrots. Prices are sellers’ asking prices in USD (Nov 2026 snapshot), not sold prices. '
     + '“Ballpark” means an estimate — no confirmed listing was found.</p>' +
     '<div class="toolbar"><input id="q" type="search" placeholder="Search brainrots…" aria-label="Search brainrots"></div>' +
     '<div id="list" class="grid two"></div></div>' + finePrintHtml();
@@ -1212,6 +1299,7 @@ ROUTES.account = async function () {
   if (!loggedIn()) { loginView('Log in to see your account.'); return; }
   const me = state.me;
   const blocked = await get('/api/dm/blocked/list').catch(() => ({ blocked: [] }));
+  const ref = await get('/api/referrals').catch(() => null);
   view.innerHTML =
     '<div class="card"><h1>Your account</h1>' +
     '<p><strong>' + esc(me.username) + '</strong>' + badgeHtml(me.badge) + verifiedBadge(me) + '</p>' +
@@ -1223,11 +1311,23 @@ ROUTES.account = async function () {
     '<p><a class="btn secondary" href="#/messages">Messages' + (state.unread ? ' (' + state.unread + ' unread)' : '') + '</a> ' +
     '<a class="btn secondary" href="#/friends">Friends</a></p>' +
     '<p><button class="btn secondary" id="logoutBtn2">Log out</button></p></div>' +
+    (ref ? '<div class="card"><h2>🎁 Invite friends — giveaway</h2>' +
+    '<p>Share your invite link. Every friend who signs up through it and gets verified counts. <strong>' + ref.count + ' / ' + ref.needed + '</strong> friends joined.</p>' +
+    (ref.entered
+      ? '<p><strong>🎉 You\'re in the raffle!</strong> Your name is on the giveaway board.</p>'
+      : '<p class="muted">Invite ' + (ref.needed - ref.count) + ' more friend' + ((ref.needed - ref.count) === 1 ? '' : 's') + ' to get in the raffle.</p>') +
+    '<p><input readonly value="' + esc(ref.link) + '" id="refLink" style="width:100%"></p>' +
+    '<p><button class="btn secondary" id="copyRef">Copy link</button> <a class="btn secondary" href="#/giveaway">Open the giveaway tab</a></p></div>' : '') +
     (blocked.blocked.length ? '<div class="card"><h2>Blocked members</h2>' +
       blocked.blocked.map(b => '<div class="spread"><span>' + esc(b.username) + '</span>' +
         '<button class="btn secondary" data-unblock="' + b.id + '">Unblock</button></div>').join('') + '</div>' : '') +
     finePrintHtml();
   $('#logoutBtn2').onclick = async () => { await post('/api/auth/logout'); state.me = null; state.items = null; location.hash = '#/home'; await loadMe(); renderNav(); };
+  const cr = $('#copyRef');
+  if (cr) cr.onclick = async () => {
+    try { await copyText($('#refLink').value); toast('Invite link copied.'); }
+    catch (e) { toast('Copy failed — long-press the link to copy it.'); }
+  };
   view.addEventListener('click', async e => {
     const u = e.target.closest('[data-unblock]');
     if (u) { try { await post('/api/dm/' + u.dataset.unblock + '/unblock'); toast('Unblocked.'); route(); } catch (err) { toast(err.message); } }
@@ -1254,6 +1354,11 @@ ROUTES.admin = async function () {
     '<div class="card"><strong>Waiting for approval</strong><div class="price">' + (stats.pendingApprovals || 0) + '</div></div>' +
     '</div>' +
     '<p class="muted small">PayPal Secret configured: ' + (stats.paypalSecretConfigured ? 'yes — subscriptions are verified with PayPal' : 'no — subscriptions are recorded from checkout only; add PAYPAL_CLIENT_SECRET to verify them server-side') + '.</p></div>' +
+    '<div class="card"><h2>🎁 Referrals &amp; giveaway</h2>' +
+    '<p class="muted">Invite 5 verified friends = in the raffle. Only verified friends count; one account per email, no self-invites.</p>' +
+    '<div id="refAdminList">Loading…</div>' +
+    '<p><button class="btn" id="drawBtn">Draw a raffle winner</button> <span id="drawMsg" class="muted"></span></p>' +
+    '<div id="drawList"></div></div>' +
     '<div class="card"><h2>Waiting for approval</h2><div id="pendingList">Loading…</div></div>' +
     '<div class="card"><h2>Reports</h2><div id="reportList">Loading…</div></div>' +
     '<div class="card"><h2>Members</h2><div id="memberAdminList">Loading…</div></div>' +
@@ -1310,9 +1415,33 @@ ROUTES.admin = async function () {
       '<button class="btn ghost" data-revoke="' + m.id + '">Remove access</button>' +
       '</div></div></div>').join('');
   };
+  const loadReferrals = async () => {
+    const r = await get('/api/admin/referrals');
+    const b = await get('/api/giveaway').catch(() => null);
+    $('#refAdminList').innerHTML =
+      '<p class="muted">' + r.enteredCount + ' member' + (r.enteredCount === 1 ? '' : 's') + ' in the raffle (needs ' + r.needed + ' invites).</p>' +
+      r.rows.map(m =>
+        '<div class="spread"><span><strong>' + esc(m.username) + '</strong>' + badgeHtml(m.badge) +
+        '<span class="muted small"> · ' + esc(m.email) + (m.referredBy ? ' · invited by ' + esc(m.referredBy) : ' · no referrer') + (m.verified ? '' : ' · NOT VERIFIED') + '</span></span>' +
+        '<span><strong>' + m.referralCount + '</strong> invites' + (m.entered ? ' · <span class="badge">IN RAFFLE</span>' : '') + '</span></div>').join('');
+    $('#drawList').innerHTML = (b && b.draws && b.draws.length)
+      ? '<h3>Past winners</h3>' + b.draws.map(d => '<p><strong>' + esc(d.winner_username) + '</strong> <span class="muted small">— drawn ' + esc(new Date(d.drawn_at).toLocaleDateString()) + ' by ' + esc(d.drawn_by) + '</span></p>').join('')
+      : '<p class="muted">No winners drawn yet.</p>';
+  };
+  const drawBtn = $('#drawBtn');
+  if (drawBtn) drawBtn.onclick = async () => {
+    const msg = $('#drawMsg');
+    try {
+      const r = await post('/api/admin/raffle/draw', {});
+      msg.textContent = 'Winner: ' + r.winner.username + ' 🎉';
+      toast('Winner drawn: ' + r.winner.username);
+      await loadReferrals();
+    } catch (err) { msg.textContent = err.message; }
+  };
   await loadPending();
   await loadReports();
   await loadMembers();
+  await loadReferrals();
   view.addEventListener('click', async e => {
     const ap = e.target.closest('[data-approve]');
     if (ap) { try { await post('/api/admin/approve', { userId: Number(ap.dataset.approve) }); toast('Approved.'); await loadPending(); await loadMembers(); } catch (err) { toast(err.message); } return; }
@@ -1378,6 +1507,7 @@ ROUTES.admin = async function () {
 
 // ---------- init ----------
 (async function init() {
+  captureRef();
   await loadCfg();
   await loadMe();
   await refreshUnread();
