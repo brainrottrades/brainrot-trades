@@ -1,0 +1,2727 @@
+{
+ "generatedFrom": "Fortnite Steal the Brainrot price research, Nov 22-23 2026 (~/workspace/brainrot-prices/). All prices are sellers' ASKING prices in USD, not sold prices. Ballpark entries are estimates.",
+ "items": [
+  {
+   "id": "vulkarion",
+   "name": "Vulkarion",
+   "typicalLow": 30.0,
+   "typicalHigh": 30.0,
+   "rangeLow": 12.0,
+   "rangeHigh": 50.0,
+   "ballpark": false,
+   "variants": {
+    "Default": {
+     "low": 12.0,
+     "high": 12.0,
+     "traits": null
+    },
+    "Gothic": {
+     "low": 30.0,
+     "high": 30.0,
+     "traits": 2
+    },
+    "Jungle": {
+     "low": 30.0,
+     "high": 30.0,
+     "traits": 0
+    },
+    "Summer": {
+     "low": 30.0,
+     "high": 30.0,
+     "traits": 0
+    },
+    "Muertos": {
+     "low": 50.0,
+     "high": 50.0,
+     "traits": 1
+    },
+    "Void": {
+     "low": 50.0,
+     "high": 50.0,
+     "traits": 2
+    }
+   },
+   "image": "vulkarion.webp",
+   "rarityPct": 0.004
+  },
+  {
+   "id": "magico-moonman",
+   "name": "Magico Moonman",
+   "typicalLow": 30.0,
+   "typicalHigh": 46.0,
+   "rangeLow": 18.0,
+   "rangeHigh": 100.0,
+   "ballpark": false,
+   "variants": {
+    "Rave": {
+     "low": 46.0,
+     "high": 46.0,
+     "traits": 1
+    },
+    "Diamond": {
+     "low": 19.99,
+     "high": 19.99,
+     "traits": null
+    },
+    "Darkness": {
+     "low": 50.0,
+     "high": 50.0,
+     "traits": 6
+    },
+    "Magical": {
+     "low": 18.0,
+     "high": 18.0,
+     "traits": null
+    },
+    "Default": {
+     "low": 30.0,
+     "high": 30.0,
+     "traits": null
+    },
+    "Muertos": {
+     "low": 60.0,
+     "high": 60.0,
+     "traits": null
+    },
+    "Halloween": {
+     "low": 80.0,
+     "high": 80.0,
+     "traits": null
+    },
+    "Neon": {
+     "low": 30.0,
+     "high": 30.0,
+     "traits": null
+    }
+   },
+   "image": "magico-moonman.webp",
+   "rarityPct": 0.005
+  },
+  {
+   "id": "mecha-traladone",
+   "name": "Mecha Traladone",
+   "typicalLow": 105.0,
+   "typicalHigh": 110.0,
+   "rangeLow": 63.0,
+   "rangeHigh": 230.0,
+   "ballpark": false,
+   "variants": {
+    "Default": {
+     "low": 63.0,
+     "high": 63.0,
+     "traits": null
+    },
+    "Magical": {
+     "low": 75.0,
+     "high": 90.0,
+     "traits": 1
+    },
+    "Jungle": {
+     "low": 70.0,
+     "high": 70.0,
+     "traits": null
+    }
+   },
+   "image": "mecha-traladone.webp",
+   "rarityPct": 0.0026
+  },
+  {
+   "id": "harpanzee",
+   "name": "Harpanzee",
+   "typicalLow": 15.0,
+   "typicalHigh": 20.0,
+   "rangeLow": 10.0,
+   "rangeHigh": 45.0,
+   "ballpark": false,
+   "variants": {
+    "Rainbow": {
+     "low": 10.0,
+     "high": 10.0,
+     "traits": null
+    },
+    "Heaven": {
+     "low": 12.0,
+     "high": 20.0,
+     "traits": null
+    },
+    "Magical": {
+     "low": 20.0,
+     "high": 20.0,
+     "traits": null
+    },
+    "Rave": {
+     "low": 15.0,
+     "high": 15.0,
+     "traits": null
+    },
+    "Default": {
+     "low": 10.0,
+     "high": 10.0,
+     "traits": null
+    },
+    "Neon": {
+     "low": 20.0,
+     "high": 20.0,
+     "traits": 1
+    },
+    "Void": {
+     "low": 45.0,
+     "high": 45.0,
+     "traits": null
+    }
+   },
+   "image": "harpanzee.webp",
+   "rarityPct": 0.006
+  },
+  {
+   "id": "la-superior-combinacion",
+   "name": "La Superior Combinacion",
+   "typicalLow": 13.0,
+   "typicalHigh": 15.0,
+   "rangeLow": 10.0,
+   "rangeHigh": 75.0,
+   "ballpark": false,
+   "variants": {
+    "Heaven": {
+     "low": 10.0,
+     "high": 10.0,
+     "traits": 0
+    },
+    "Summer": {
+     "low": 13.0,
+     "high": 13.0,
+     "traits": null
+    },
+    "Magical": {
+     "low": 14.0,
+     "high": 14.0,
+     "traits": null
+    },
+    "Ice and Fire": {
+     "low": 25.0,
+     "high": 25.0,
+     "traits": null
+    },
+    "Halloween": {
+     "low": 40.0,
+     "high": 45.0,
+     "traits": null
+    },
+    "Muertos": {
+     "low": 75.0,
+     "high": 75.0,
+     "traits": null
+    },
+    "Rave": {
+     "low": 15.0,
+     "high": 15.0,
+     "traits": 1
+    },
+    "Jungle": {
+     "low": 20.0,
+     "high": 20.0,
+     "traits": 2
+    },
+    "Dreamy": {
+     "low": 13,
+     "high": 15,
+     "traits": null
+    },
+    "Neon": {
+     "low": 15,
+     "high": 25,
+     "traits": null
+    }
+   },
+   "image": "la-superior-combinacion.webp",
+   "rarityPct": null
+  },
+  {
+   "id": "la-skull-combinaci-n-muertos",
+   "name": "La Skull Combinaci\u00f3n Muertos",
+   "typicalLow": 25.0,
+   "typicalHigh": 40.0,
+   "rangeLow": 10.0,
+   "rangeHigh": 58.0,
+   "ballpark": false,
+   "variants": {
+    "Muertos": {
+     "low": 25.0,
+     "high": 25.0,
+     "traits": 1
+    },
+    "Halloween": {
+     "low": 40.0,
+     "high": 40.0,
+     "traits": 2
+    },
+    "Aqua": {
+     "low": 10.0,
+     "high": 10.0,
+     "traits": null
+    }
+   },
+   "image": null,
+   "rarityPct": null
+  },
+  {
+   "id": "bearini-plammini-guardini",
+   "name": "Bearini Plammini Guardini",
+   "typicalLow": 20.0,
+   "typicalHigh": 20.0,
+   "rangeLow": 5.0,
+   "rangeHigh": 130.0,
+   "ballpark": false,
+   "variants": {
+    "Default": {
+     "low": 5.0,
+     "high": 5.0,
+     "traits": null
+    },
+    "Crystal": {
+     "low": 20.0,
+     "high": 20.0,
+     "traits": null
+    },
+    "Halloween": {
+     "low": 130.0,
+     "high": 130.0,
+     "traits": 3
+    }
+   },
+   "image": "bearini-plammini-guardini.webp",
+   "rarityPct": null
+  },
+  {
+   "id": "cannone-maledettone",
+   "name": "Cannone Maledettone",
+   "typicalLow": 25.0,
+   "typicalHigh": 29.0,
+   "rangeLow": 15.0,
+   "rangeHigh": 29.0,
+   "ballpark": false,
+   "variants": {
+    "Default": {
+     "low": 29.0,
+     "high": 29.0,
+     "traits": null
+    },
+    "Spooky": {
+     "low": 29.0,
+     "high": 29.0,
+     "traits": 5
+    }
+   },
+   "image": "cannone-maledettone.webp",
+   "rarityPct": 0.016
+  },
+  {
+   "id": "carouselino",
+   "name": "Carouselino",
+   "typicalLow": 20.0,
+   "typicalHigh": 25.0,
+   "rangeLow": 13.0,
+   "rangeHigh": 100.0,
+   "ballpark": false,
+   "variants": {
+    "Aqua": {
+     "low": 13.0,
+     "high": 15.0,
+     "traits": null
+    },
+    "Summer": {
+     "low": 20.0,
+     "high": 25.0,
+     "traits": 2
+    },
+    "Muertos": {
+     "low": 80.0,
+     "high": 80.0,
+     "traits": 4
+    },
+    "Magical": {
+     "low": 65.0,
+     "high": 65.0,
+     "traits": 3
+    }
+   },
+   "image": "carouselino.webp",
+   "rarityPct": 0.0025
+  },
+  {
+   "id": "diggoblock",
+   "name": "DiggoBlock",
+   "typicalLow": 15.0,
+   "typicalHigh": 17.0,
+   "rangeLow": 8.0,
+   "rangeHigh": 30.0,
+   "ballpark": false,
+   "variants": {
+    "Jungle": {
+     "low": 15.0,
+     "high": 15.0,
+     "traits": null
+    },
+    "Summer": {
+     "low": 17.0,
+     "high": 17.0,
+     "traits": null
+    },
+    "Void": {
+     "low": 17.0,
+     "high": 17.0,
+     "traits": null
+    },
+    "Gothic": {
+     "low": 30.0,
+     "high": 30.0,
+     "traits": null
+    },
+    "Halloween": {
+     "low": 20.0,
+     "high": 20.0,
+     "traits": 6
+    }
+   },
+   "image": "diggoblock.webp",
+   "rarityPct": 0.04
+  },
+  {
+   "id": "fishini-mechinini",
+   "name": "Fishini Mechinini",
+   "typicalLow": 25.0,
+   "typicalHigh": 25.0,
+   "rangeLow": 12.0,
+   "rangeHigh": 45.0,
+   "ballpark": false,
+   "variants": {
+    "Gothic": {
+     "low": 25.0,
+     "high": 25.0,
+     "traits": null
+    },
+    "Default": {
+     "low": 12.0,
+     "high": 29.0,
+     "traits": null
+    },
+    "Crystal": {
+     "low": 45.0,
+     "high": 45.0,
+     "traits": 3
+    }
+   },
+   "image": "fishini-mechinini.webp",
+   "rarityPct": 0.035
+  },
+  {
+   "id": "garbagzilla",
+   "name": "Garbagzilla",
+   "typicalLow": 5.0,
+   "typicalHigh": 10.0,
+   "rangeLow": 5.0,
+   "rangeHigh": 22.0,
+   "ballpark": false,
+   "variants": {
+    "Aqua": {
+     "low": 16.0,
+     "high": 16.0,
+     "traits": null
+    },
+    "Summer": {
+     "low": 17.0,
+     "high": 17.0,
+     "traits": null
+    },
+    "Halloween": {
+     "low": 20.0,
+     "high": 20.0,
+     "traits": null
+    },
+    "Jungle": {
+     "low": 8.0,
+     "high": 8.0,
+     "traits": null
+    },
+    "Gold": {
+     "low": 5.0,
+     "high": 5.0,
+     "traits": null
+    },
+    "Muertos": {
+     "low": 20.0,
+     "high": 20.0,
+     "traits": 6
+    }
+   },
+   "image": "garbagzilla.webp",
+   "rarityPct": 0.06
+  },
+  {
+   "id": "spidorobos",
+   "name": "Spidorobos",
+   "typicalLow": 13.0,
+   "typicalHigh": 15.0,
+   "rangeLow": 13.0,
+   "rangeHigh": 17.0,
+   "ballpark": false,
+   "variants": {
+    "Neon": {
+     "low": 13.0,
+     "high": 13.0,
+     "traits": null
+    },
+    "Rave": {
+     "low": 13.0,
+     "high": 13.0,
+     "traits": null
+    },
+    "Jungle": {
+     "low": 15.0,
+     "high": 15.0,
+     "traits": null
+    },
+    "Gothic": {
+     "low": 17.0,
+     "high": 17.0,
+     "traits": null
+    },
+    "Default": {
+     "low": 2.0,
+     "high": 2.0,
+     "traits": null
+    }
+   },
+   "image": null,
+   "rarityPct": null
+  },
+  {
+   "id": "tralaledon",
+   "name": "Tralaledon",
+   "typicalLow": 18.0,
+   "typicalHigh": 25.0,
+   "rangeLow": 6.0,
+   "rangeHigh": 35.0,
+   "ballpark": false,
+   "variants": {
+    "Gothic": {
+     "low": 18.0,
+     "high": 18.0,
+     "traits": null
+    },
+    "Aqua": {
+     "low": 10.0,
+     "high": 15.0,
+     "traits": 4
+    },
+    "Spooky": {
+     "low": 20.0,
+     "high": 25.0,
+     "traits": 5
+    },
+    "Default": {
+     "low": 6.0,
+     "high": 18.0,
+     "traits": null
+    }
+   },
+   "image": "tralaledon.webp",
+   "rarityPct": null
+  },
+  {
+   "id": "scorpidusa-spiderusa",
+   "name": "Scorpidusa Spiderusa",
+   "typicalLow": 45.0,
+   "typicalHigh": 45.0,
+   "rangeLow": 12.0,
+   "rangeHigh": 80.0,
+   "ballpark": false,
+   "variants": {
+    "Neon": {
+     "low": 46.0,
+     "high": 47.0,
+     "traits": 1
+    },
+    "Default": {
+     "low": 12.0,
+     "high": 12.0,
+     "traits": null
+    }
+   },
+   "image": "scorpidusa-spiderusa.webp",
+   "rarityPct": 0.004
+  },
+  {
+   "id": "el-crunchador",
+   "name": "El Crunchador",
+   "typicalLow": 8.0,
+   "typicalHigh": 15.0,
+   "rangeLow": 5.0,
+   "rangeHigh": 25.0,
+   "ballpark": false,
+   "variants": {
+    "Halloween": {
+     "low": 8.0,
+     "high": 8.0,
+     "traits": null
+    },
+    "Default": {
+     "low": 23.0,
+     "high": 23.0,
+     "traits": null
+    },
+    "Gothic": {
+     "low": 5.0,
+     "high": 5.0,
+     "traits": null
+    },
+    "Rainbow": {
+     "low": 25.0,
+     "high": 25.0,
+     "traits": 3
+    },
+    "Diamond": {
+     "low": 15.0,
+     "high": 15.0,
+     "traits": null
+    },
+    "Summer": {
+     "low": 5.0,
+     "high": 5.0,
+     "traits": null
+    }
+   },
+   "image": "el-crunchador.webp",
+   "rarityPct": 0.12
+  },
+  {
+   "id": "skullantula",
+   "name": "Skullantula",
+   "typicalLow": 20.0,
+   "typicalHigh": 25.0,
+   "rangeLow": 10.0,
+   "rangeHigh": 35.0,
+   "ballpark": false,
+   "variants": {
+    "Halloween": {
+     "low": 20.0,
+     "high": 20.0,
+     "traits": 4
+    },
+    "Muertos": {
+     "low": 15.0,
+     "high": 15.0,
+     "traits": 1
+    },
+    "Gothic": {
+     "low": 25.0,
+     "high": 25.0,
+     "traits": null
+    },
+    "Magical": {
+     "low": 20.0,
+     "high": 20.0,
+     "traits": 4
+    },
+    "Summer": {
+     "low": 25.0,
+     "high": 25.0,
+     "traits": 6
+    },
+    "Spooky": {
+     "low": 10.0,
+     "high": 10.0,
+     "traits": 2
+    },
+    "Void": {
+     "low": 29.0,
+     "high": 29.0,
+     "traits": 4
+    },
+    "Default": {
+     "low": 10.0,
+     "high": 10.0,
+     "traits": null
+    }
+   },
+   "image": "skullantula.webp",
+   "rarityPct": null
+  },
+  {
+   "id": "gladiagatto-e-rattino",
+   "name": "Gladiagatto e Rattino",
+   "typicalLow": 20.0,
+   "typicalHigh": 30.0,
+   "rangeLow": 12.0,
+   "rangeHigh": 41.0,
+   "ballpark": false,
+   "variants": {
+    "Magical": {
+     "low": 41.0,
+     "high": 41.0,
+     "traits": null
+    },
+    "Rainbow": {
+     "low": 35.0,
+     "high": 35.0,
+     "traits": null
+    },
+    "Aqua": {
+     "low": 12.0,
+     "high": 12.0,
+     "traits": null
+    },
+    "Jungle": {
+     "low": 30.0,
+     "high": 30.0,
+     "traits": null
+    },
+    "Default": {
+     "low": 20.0,
+     "high": 20.0,
+     "traits": 0
+    }
+   },
+   "image": null,
+   "rarityPct": 0.006
+  },
+  {
+   "id": "la-crazy-combinacion",
+   "name": "La Crazy Combinacion",
+   "typicalLow": 12.0,
+   "typicalHigh": 33.0,
+   "rangeLow": 6.0,
+   "rangeHigh": 40.0,
+   "ballpark": false,
+   "variants": {
+    "Default": {
+     "low": 6.0,
+     "high": 6.0,
+     "traits": null
+    },
+    "Halloween": {
+     "low": 12.0,
+     "high": 12.0,
+     "traits": null
+    },
+    "Rave": {
+     "low": 40.0,
+     "high": 40.0,
+     "traits": 5
+    },
+    "Toxic": {
+     "low": 33.0,
+     "high": 33.0,
+     "traits": null
+    }
+   },
+   "image": "la-crazy-combinacion.webp",
+   "rarityPct": null
+  },
+  {
+   "id": "titanocchio",
+   "name": "Titanocchio",
+   "typicalLow": 23.0,
+   "typicalHigh": 23.0,
+   "rangeLow": 23.0,
+   "rangeHigh": 23.0,
+   "ballpark": false,
+   "variants": {
+    "Default": {
+     "low": 23.0,
+     "high": 23.0,
+     "traits": null
+    }
+   },
+   "image": "titanocchio.webp",
+   "rarityPct": null
+  },
+  {
+   "id": "antoni-stongoni",
+   "name": "Antoni Stongoni",
+   "typicalLow": 30.0,
+   "typicalHigh": 35.0,
+   "rangeLow": 30.0,
+   "rangeHigh": 90.0,
+   "ballpark": false,
+   "variants": {
+    "Aqua": {
+     "low": 30.0,
+     "high": 30.0,
+     "traits": null
+    },
+    "Darkness": {
+     "low": 35.0,
+     "high": 35.0,
+     "traits": null
+    },
+    "Void": {
+     "low": 30.0,
+     "high": 30.0,
+     "traits": null
+    },
+    "Default": {
+     "low": 90.0,
+     "high": 90.0,
+     "traits": null
+    }
+   },
+   "image": null,
+   "rarityPct": 0.004
+  },
+  {
+   "id": "bullzilla",
+   "name": "Bullzilla",
+   "typicalLow": 30.0,
+   "typicalHigh": 30.0,
+   "rangeLow": 25.0,
+   "rangeHigh": 57.0,
+   "ballpark": false,
+   "variants": {
+    "Heaven": {
+     "low": 30.0,
+     "high": 30.0,
+     "traits": null
+    },
+    "Default": {
+     "low": 25.0,
+     "high": 25.0,
+     "traits": null
+    },
+    "Halloween": {
+     "low": 38.0,
+     "high": 50.0,
+     "traits": null
+    },
+    "Jungle": {
+     "low": 57.0,
+     "high": 57.0,
+     "traits": null
+    }
+   },
+   "image": "bullzilla.webp",
+   "rarityPct": 0.004
+  },
+  {
+   "id": "jackosaurus",
+   "name": "Jackosaurus",
+   "typicalLow": 20.0,
+   "typicalHigh": 35.0,
+   "rangeLow": 20.0,
+   "rangeHigh": 300.0,
+   "ballpark": false,
+   "variants": {
+    "Default": {
+     "low": 20.0,
+     "high": 20.0,
+     "traits": null
+    },
+    "Muertos": {
+     "low": 280.0,
+     "high": 300.0,
+     "traits": 5
+    },
+    "Halloween": {
+     "low": 130.0,
+     "high": 130.0,
+     "traits": null
+    },
+    "Spooky": {
+     "low": 150.0,
+     "high": 150.0,
+     "traits": null
+    },
+    "Void": {
+     "low": 150.0,
+     "high": 150.0,
+     "traits": null
+    }
+   },
+   "image": "jackosaurus.webp",
+   "rarityPct": null
+  },
+  {
+   "id": "los-gigalitraktos",
+   "name": "Los Gigalitraktos",
+   "typicalLow": 60.0,
+   "typicalHigh": 60.0,
+   "rangeLow": 18.0,
+   "rangeHigh": 117.0,
+   "ballpark": false,
+   "variants": {
+    "Default": {
+     "low": 18.0,
+     "high": 18.0,
+     "traits": null
+    },
+    "Galaxy": {
+     "low": 117.0,
+     "high": 117.0,
+     "traits": 4
+    },
+    "Jungle": {
+     "low": 59.0,
+     "high": 59.0,
+     "traits": 9
+    }
+   },
+   "image": "los-gigalitraktos.webp",
+   "rarityPct": null
+  },
+  {
+   "id": "iceberry-mammoth",
+   "name": "Iceberry Mammoth",
+   "typicalLow": 90.0,
+   "typicalHigh": 150.0,
+   "rangeLow": 65.0,
+   "rangeHigh": 400.0,
+   "ballpark": false,
+   "variants": {
+    "Bee": {
+     "low": 150.0,
+     "high": 150.0,
+     "traits": 4
+    },
+    "Default": {
+     "low": 65.0,
+     "high": 65.0,
+     "traits": null
+    },
+    "Heaven": {
+     "low": 117.0,
+     "high": 117.0,
+     "traits": null
+    },
+    "Spooky": {
+     "low": 400.0,
+     "high": 400.0,
+     "traits": 7
+    },
+    "Gothic": {
+     "low": 75.0,
+     "high": 75.0,
+     "traits": null
+    },
+    "Rave": {
+     "low": 100.0,
+     "high": 120.0,
+     "traits": 0
+    }
+   },
+   "image": "iceberry-mammoth.webp",
+   "rarityPct": 0.0012
+  },
+  {
+   "id": "marionarch",
+   "name": "Marionarch",
+   "typicalLow": 110.0,
+   "typicalHigh": 130.0,
+   "rangeLow": 80.0,
+   "rangeHigh": 234.0,
+   "ballpark": false,
+   "variants": {
+    "Default": {
+     "low": 80.0,
+     "high": 80.0,
+     "traits": null
+    }
+   },
+   "image": "marionarch.webp",
+   "rarityPct": 0.0012
+  },
+  {
+   "id": "los-tractoritos",
+   "name": "Los Tractoritos",
+   "typicalLow": 25.0,
+   "typicalHigh": 25.0,
+   "rangeLow": 25.0,
+   "rangeHigh": 25.0,
+   "ballpark": false,
+   "variants": {
+    "Default": {
+     "low": 25.0,
+     "high": 25.0,
+     "traits": null
+    }
+   },
+   "image": "los-tractoritos.webp",
+   "rarityPct": null
+  },
+  {
+   "id": "chochone-dragone",
+   "name": "Chochone Dragone",
+   "typicalLow": 29.0,
+   "typicalHigh": 47.0,
+   "rangeLow": 29.0,
+   "rangeHigh": 47.0,
+   "ballpark": false,
+   "variants": {
+    "Lovely": {
+     "low": 165.0,
+     "high": 165.0,
+     "traits": 2
+    },
+    "Default": {
+     "low": 15.0,
+     "high": 20.0,
+     "traits": null
+    }
+   },
+   "image": "chochone-dragone.jpg",
+   "rarityPct": null
+  },
+  {
+   "id": "sunculus-ferris",
+   "name": "Sunculus Ferris",
+   "typicalLow": 30.0,
+   "typicalHigh": 35.0,
+   "rangeLow": 25.0,
+   "rangeHigh": 35.0,
+   "ballpark": false,
+   "variants": {
+    "Void": {
+     "low": 25.0,
+     "high": 25.0,
+     "traits": null
+    }
+   },
+   "image": "sunculus-ferris.webp",
+   "rarityPct": 0.025
+  },
+  {
+   "id": "turbino-supremo",
+   "name": "Turbino Supremo",
+   "typicalLow": 8.0,
+   "typicalHigh": 20.0,
+   "rangeLow": 8.0,
+   "rangeHigh": 20.0,
+   "ballpark": false,
+   "variants": {
+    "Halloween": {
+     "low": 8.0,
+     "high": 8.0,
+     "traits": null
+    },
+    "Default": {
+     "low": 20.0,
+     "high": 20.0,
+     "traits": null
+    }
+   },
+   "image": "turbino-supremo.webp",
+   "rarityPct": 0.07
+  },
+  {
+   "id": "arcangelo-mantisio",
+   "name": "Arcangelo Mantisio",
+   "typicalLow": 10.0,
+   "typicalHigh": 10.0,
+   "rangeLow": 7.0,
+   "rangeHigh": 10.0,
+   "ballpark": false,
+   "variants": {
+    "Heaven": {
+     "low": 10.0,
+     "high": 10.0,
+     "traits": null
+    },
+    "Default": {
+     "low": 10.0,
+     "high": 10.0,
+     "traits": null
+    }
+   },
+   "image": "arcangelo-mantisio.webp",
+   "rarityPct": 0.08
+  },
+  {
+   "id": "celesto-tortello",
+   "name": "Celesto Tortello",
+   "typicalLow": 10.0,
+   "typicalHigh": 18.0,
+   "rangeLow": 8.0,
+   "rangeHigh": 50.0,
+   "ballpark": false,
+   "variants": {
+    "Halloween": {
+     "low": 8.0,
+     "high": 8.0,
+     "traits": null
+    },
+    "Magical": {
+     "low": 18.0,
+     "high": 18.0,
+     "traits": null
+    },
+    "Dreamy": {
+     "low": 30.0,
+     "high": 30.0,
+     "traits": null
+    },
+    "Gold": {
+     "low": 50.0,
+     "high": 50.0,
+     "traits": null
+    },
+    "Default": {
+     "low": 10.0,
+     "high": 15.0,
+     "traits": null
+    }
+   },
+   "image": "celesto-tortello.webp",
+   "rarityPct": 0.05
+  },
+  {
+   "id": "krabaracade",
+   "name": "Krabaracade",
+   "typicalLow": 10.0,
+   "typicalHigh": 15.0,
+   "rangeLow": 10.0,
+   "rangeHigh": 17.0,
+   "ballpark": false,
+   "variants": {
+    "Bee": {
+     "low": 10.0,
+     "high": 10.0,
+     "traits": null
+    },
+    "Muertos": {
+     "low": 13.0,
+     "high": 15.0,
+     "traits": null
+    },
+    "Halloween": {
+     "low": 10.0,
+     "high": 10.0,
+     "traits": null
+    },
+    "Default": {
+     "low": 12.0,
+     "high": 12.0,
+     "traits": null
+    }
+   },
+   "image": "krabaracade.webp",
+   "rarityPct": 0.05
+  },
+  {
+   "id": "gigalitraktos-spidorobos",
+   "name": "Gigalitraktos Spidorobos",
+   "typicalLow": 8.0,
+   "typicalHigh": 15.0,
+   "rangeLow": 8.0,
+   "rangeHigh": 18.0,
+   "ballpark": false,
+   "variants": {
+    "Aqua": {
+     "low": 8.0,
+     "high": 8.0,
+     "traits": null
+    },
+    "Default": {
+     "low": 18.0,
+     "high": 18.0,
+     "traits": null
+    }
+   },
+   "image": "gigalitraktos-spidorobos.webp",
+   "rarityPct": 0.11
+  },
+  {
+   "id": "el-grim-reapero",
+   "name": "El Grim Reapero",
+   "typicalLow": 20.0,
+   "typicalHigh": 25.0,
+   "rangeLow": 15.0,
+   "rangeHigh": 35.0,
+   "ballpark": false,
+   "variants": {
+    "Default": {
+     "low": 17.5,
+     "high": 17.5,
+     "traits": null
+    },
+    "Spooky": {
+     "low": 25.0,
+     "high": 25.0,
+     "traits": null
+    },
+    "Halloween": {
+     "low": 20.0,
+     "high": 20.0,
+     "traits": null
+    },
+    "Aqua": {
+     "low": 15.0,
+     "high": 15.0,
+     "traits": 4
+    },
+    "Gothic": {
+     "low": 25.0,
+     "high": 25.0,
+     "traits": 2
+    }
+   },
+   "image": "el-grim-reapero.webp",
+   "rarityPct": null
+  },
+  {
+   "id": "gargorion",
+   "name": "Gargorion",
+   "typicalLow": 20.0,
+   "typicalHigh": 25.0,
+   "rangeLow": 12.0,
+   "rangeHigh": 25.0,
+   "ballpark": false,
+   "variants": {
+    "Muertos": {
+     "low": 20.0,
+     "high": 20.0,
+     "traits": 5
+    },
+    "Default": {
+     "low": 12.0,
+     "high": 12.0,
+     "traits": null
+    }
+   },
+   "image": "gargorion.webp",
+   "rarityPct": null
+  },
+  {
+   "id": "gattino-e-mortosso",
+   "name": "Gattino e Mortosso",
+   "typicalLow": 10.0,
+   "typicalHigh": 15.0,
+   "rangeLow": 10.0,
+   "rangeHigh": 29.0,
+   "ballpark": false,
+   "variants": {
+    "Gothic": {
+     "low": 10.0,
+     "high": 10.0,
+     "traits": null
+    },
+    "Halloween": {
+     "low": 15.0,
+     "high": 15.0,
+     "traits": null
+    },
+    "Default": {
+     "low": 6.0,
+     "high": 29.0,
+     "traits": null
+    },
+    "Darkness": {
+     "low": 12.0,
+     "high": 12.0,
+     "traits": null
+    }
+   },
+   "image": "gattino-e-mortosso.webp",
+   "rarityPct": null
+  },
+  {
+   "id": "jetzilla",
+   "name": "Jetzilla",
+   "typicalLow": 40.0,
+   "typicalHigh": 53.0,
+   "rangeLow": 25.0,
+   "rangeHigh": 80.0,
+   "ballpark": false,
+   "variants": {
+    "Default": {
+     "low": 5.0,
+     "high": 5.0,
+     "traits": null
+    },
+    "Bee": {
+     "low": 40.0,
+     "high": 40.0,
+     "traits": null
+    },
+    "Gothic": {
+     "low": 25.0,
+     "high": 25.0,
+     "traits": null
+    },
+    "Spooky": {
+     "low": 80.0,
+     "high": 80.0,
+     "traits": null
+    }
+   },
+   "image": "jetzilla.webp",
+   "rarityPct": 0.003
+  },
+  {
+   "id": "gorgonzilla",
+   "name": "Gorgonzilla",
+   "typicalLow": 10.0,
+   "typicalHigh": 20.0,
+   "rangeLow": 3.0,
+   "rangeHigh": 20.0,
+   "ballpark": false,
+   "variants": {
+    "Spooky": {
+     "low": 15.0,
+     "high": 15.0,
+     "traits": 6
+    },
+    "Summer": {
+     "low": 20.0,
+     "high": 20.0,
+     "traits": 6
+    },
+    "Void": {
+     "low": 20.0,
+     "high": 20.0,
+     "traits": 6
+    },
+    "Default": {
+     "low": 3.0,
+     "high": 3.0,
+     "traits": null
+    },
+    "Rainbow": {
+     "low": 8.0,
+     "high": 8.0,
+     "traits": null
+    }
+   },
+   "image": "gorgonzilla.webp",
+   "rarityPct": null
+  },
+  {
+   "id": "web-o-crow",
+   "name": "Web O Crow",
+   "typicalLow": 15.0,
+   "typicalHigh": 30.0,
+   "rangeLow": 10.0,
+   "rangeHigh": 50.0,
+   "ballpark": false,
+   "variants": {
+    "Magical": {
+     "low": 49.99,
+     "high": 49.99,
+     "traits": 2
+    },
+    "Void": {
+     "low": 10.0,
+     "high": 10.0,
+     "traits": 0
+    }
+   },
+   "image": "web-o-crow.webp",
+   "rarityPct": null
+  },
+  {
+   "id": "mobytron",
+   "name": "Mobytron",
+   "typicalLow": 115.0,
+   "typicalHigh": 350.0,
+   "rangeLow": 115.0,
+   "rangeHigh": 632.0,
+   "ballpark": false,
+   "variants": {
+    "Magical": {
+     "low": 115.0,
+     "high": 115.0,
+     "traits": null
+    },
+    "Void": {
+     "low": 293.0,
+     "high": 293.0,
+     "traits": 4
+    },
+    "Jungle": {
+     "low": 350.0,
+     "high": 350.0,
+     "traits": null
+    },
+    "Default": {
+     "low": 632.0,
+     "high": 632.0,
+     "traits": null
+    }
+   },
+   "image": "mobytron.webp",
+   "rarityPct": null
+  },
+  {
+   "id": "meccavallo",
+   "name": "Meccavallo",
+   "typicalLow": 1.0,
+   "typicalHigh": 3.0,
+   "rangeLow": 1.0,
+   "rangeHigh": 3.0,
+   "ballpark": false,
+   "variants": {
+    "Gothic": {
+     "low": 1.0,
+     "high": 1.0,
+     "traits": null
+    },
+    "Default": {
+     "low": 3.0,
+     "high": 3.0,
+     "traits": null
+    }
+   },
+   "image": "meccavallo.webp",
+   "rarityPct": 5.0
+  },
+  {
+   "id": "capanna-distruttore",
+   "name": "Capanna Distruttore",
+   "typicalLow": 5.0,
+   "typicalHigh": 5.0,
+   "rangeLow": 5.0,
+   "rangeHigh": 5.0,
+   "ballpark": false,
+   "variants": {
+    "Diamond": {
+     "low": 5.0,
+     "high": 5.0,
+     "traits": null
+    }
+   },
+   "image": "capanna-distruttore.webp",
+   "rarityPct": 4.0
+  },
+  {
+   "id": "los-chimpanzini-princinis",
+   "name": "Los Chimpanzini Princinis",
+   "typicalLow": 5.0,
+   "typicalHigh": 10.0,
+   "rangeLow": 3.0,
+   "rangeHigh": 10.0,
+   "ballpark": true,
+   "variants": {},
+   "image": "los-chimpanzini-princinis.webp",
+   "rarityPct": null
+  },
+  {
+   "id": "wreckspire-roller",
+   "name": "Wreckspire Roller",
+   "typicalLow": 5.0,
+   "typicalHigh": 18.0,
+   "rangeLow": 5.0,
+   "rangeHigh": 17.55,
+   "ballpark": false,
+   "variants": {
+    "Void": {
+     "low": 5.0,
+     "high": 5.0,
+     "traits": null
+    },
+    "Default": {
+     "low": 10.0,
+     "high": 10.0,
+     "traits": null
+    }
+   },
+   "image": "wreckspire-roller.webp",
+   "rarityPct": 3.0
+  },
+  {
+   "id": "serpientare-baturo",
+   "name": "Serpientare Baturo",
+   "typicalLow": 30.0,
+   "typicalHigh": 55.0,
+   "rangeLow": 30.0,
+   "rangeHigh": 55.0,
+   "ballpark": false,
+   "variants": {
+    "Dreamy": {
+     "low": 30.0,
+     "high": 30.0,
+     "traits": null
+    },
+    "Default": {
+     "low": 55.0,
+     "high": 55.0,
+     "traits": null
+    }
+   },
+   "image": "serpientare-baturo.webp",
+   "rarityPct": 2.5
+  },
+  {
+   "id": "cornzilla",
+   "name": "Cornzilla",
+   "typicalLow": 10.0,
+   "typicalHigh": 13.0,
+   "rangeLow": 1.0,
+   "rangeHigh": 13.0,
+   "ballpark": false,
+   "variants": {
+    "Heaven": {
+     "low": 10.0,
+     "high": 10.0,
+     "traits": null
+    },
+    "Summer": {
+     "low": 13.0,
+     "high": 13.0,
+     "traits": null
+    },
+    "Neon": {
+     "low": 10.0,
+     "high": 10.0,
+     "traits": null
+    },
+    "Aqua": {
+     "low": 1.0,
+     "high": 1.0,
+     "traits": null
+    }
+   },
+   "image": "cornzilla.webp",
+   "rarityPct": 2.0
+  },
+  {
+   "id": "alligarto-alligarto",
+   "name": "Alligarto Alligarto",
+   "typicalLow": 3.0,
+   "typicalHigh": 6.0,
+   "rangeLow": 3.0,
+   "rangeHigh": 6.0,
+   "ballpark": false,
+   "variants": {
+    "Default": {
+     "low": 3.0,
+     "high": 3.0,
+     "traits": null
+    },
+    "Diamond": {
+     "low": 3.51,
+     "high": 3.51,
+     "traits": 3
+    },
+    "Crystal": {
+     "low": 5.85,
+     "high": 5.85,
+     "traits": 2
+    }
+   },
+   "image": "alligarto-alligarto.webp",
+   "rarityPct": 1.5
+  },
+  {
+   "id": "pavonaccio",
+   "name": "Pavonaccio",
+   "typicalLow": 4.0,
+   "typicalHigh": 10.0,
+   "rangeLow": 2.0,
+   "rangeHigh": 10.0,
+   "ballpark": false,
+   "variants": {
+    "Default": {
+     "low": 4.0,
+     "high": 4.0,
+     "traits": null
+    },
+    "Muertos": {
+     "low": 10.0,
+     "high": 10.0,
+     "traits": null
+    },
+    "Spooky": {
+     "low": 10.0,
+     "high": 10.0,
+     "traits": null
+    }
+   },
+   "image": "pavonaccio.webp",
+   "rarityPct": 0.2
+  },
+  {
+   "id": "vulturino-skeletono",
+   "name": "Vulturino Skeletono",
+   "typicalLow": 12.0,
+   "typicalHigh": 12.0,
+   "rangeLow": 12.0,
+   "rangeHigh": 12.0,
+   "ballpark": false,
+   "variants": {
+    "Gothic": {
+     "low": 11.7,
+     "high": 11.7,
+     "traits": 2
+    }
+   },
+   "image": "vulturino-skeletono.webp",
+   "rarityPct": 0.19
+  },
+  {
+   "id": "croissantini-et-caffettino",
+   "name": "Croissantini et Caffettino",
+   "typicalLow": 10.0,
+   "typicalHigh": 15.0,
+   "rangeLow": 5.0,
+   "rangeHigh": 20.0,
+   "ballpark": false,
+   "variants": {
+    "Neon": {
+     "low": 10.0,
+     "high": 10.0,
+     "traits": null
+    },
+    "Toxic": {
+     "low": 15.0,
+     "high": 15.0,
+     "traits": null
+    },
+    "Football": {
+     "low": 15.0,
+     "high": 15.0,
+     "traits": null
+    },
+    "Lovely": {
+     "low": 20.0,
+     "high": 20.0,
+     "traits": null
+    },
+    "Default": {
+     "low": 5.0,
+     "high": 5.0,
+     "traits": null
+    }
+   },
+   "image": "croissantini-et-caffettino.webp",
+   "rarityPct": null
+  },
+  {
+   "id": "burguro-dan-fryuro",
+   "name": "Burguro dan Fryuro",
+   "typicalLow": 40.0,
+   "typicalHigh": 40.0,
+   "rangeLow": 40.0,
+   "rangeHigh": 40.0,
+   "ballpark": false,
+   "variants": {
+    "Crystal": {
+     "low": 40.0,
+     "high": 40.0,
+     "traits": 2
+    }
+   },
+   "image": "burguro-dan-fryuro.webp",
+   "rarityPct": 0.1
+  },
+  {
+   "id": "galaxio-astro",
+   "name": "Galaxio Astro",
+   "typicalLow": 5.0,
+   "typicalHigh": 8.0,
+   "rangeLow": 5.0,
+   "rangeHigh": 8.0,
+   "ballpark": false,
+   "variants": {
+    "Default": {
+     "low": 8.0,
+     "high": 8.0,
+     "traits": null
+    },
+    "Muertos": {
+     "low": 5.0,
+     "high": 5.0,
+     "traits": null
+    }
+   },
+   "image": "galaxio-astro.webp",
+   "rarityPct": 0.09
+  },
+  {
+   "id": "salsicino-furiosino",
+   "name": "Salsicino Furiosino",
+   "typicalLow": 10.0,
+   "typicalHigh": 15.0,
+   "rangeLow": 10.0,
+   "rangeHigh": 45.0,
+   "ballpark": false,
+   "variants": {
+    "Default": {
+     "low": 10.0,
+     "high": 10.0,
+     "traits": null
+    }
+   },
+   "image": "salsicino-furiosino.webp",
+   "rarityPct": 0.07
+  },
+  {
+   "id": "buzz-buzzini-guardini",
+   "name": "Buzz Buzzini Guardini",
+   "typicalLow": 10.0,
+   "typicalHigh": 20.0,
+   "rangeLow": 10.0,
+   "rangeHigh": 20.0,
+   "ballpark": false,
+   "variants": {
+    "Gothic": {
+     "low": 10.0,
+     "high": 10.0,
+     "traits": null
+    },
+    "Default": {
+     "low": 20.0,
+     "high": 20.0,
+     "traits": null
+    }
+   },
+   "image": "buzz-buzzini-guardini.webp",
+   "rarityPct": 0.03
+  },
+  {
+   "id": "ship-ship-ship-sahur",
+   "name": "Ship Ship Ship Sahur",
+   "typicalLow": 5.0,
+   "typicalHigh": 35.0,
+   "rangeLow": 5.0,
+   "rangeHigh": 125.0,
+   "ballpark": false,
+   "variants": {
+    "Neon": {
+     "low": 5.85,
+     "high": 5.85,
+     "traits": null
+    },
+    "Rave": {
+     "low": 15.0,
+     "high": 15.0,
+     "traits": null
+    },
+    "Spooky": {
+     "low": 35.1,
+     "high": 35.1,
+     "traits": null
+    },
+    "Heaven": {
+     "low": 125.0,
+     "high": 125.0,
+     "traits": 10
+    }
+   },
+   "image": "ship-ship-ship-sahur.webp",
+   "rarityPct": null
+  },
+  {
+   "id": "lady-pegasina",
+   "name": "Lady Pegasina",
+   "typicalLow": 15.0,
+   "typicalHigh": 20.0,
+   "rangeLow": 15.0,
+   "rangeHigh": 35.0,
+   "ballpark": false,
+   "variants": {
+    "Default": {
+     "low": 15.0,
+     "high": 15.0,
+     "traits": null
+    },
+    "Muertos": {
+     "low": 20.0,
+     "high": 35.0,
+     "traits": 5
+    },
+    "Halloween": {
+     "low": 20.0,
+     "high": 20.0,
+     "traits": 5
+    }
+   },
+   "image": "lady-pegasina.webp",
+   "rarityPct": 0.016
+  },
+  {
+   "id": "fumino-gearzino",
+   "name": "Fumino Gearzino",
+   "typicalLow": 20.0,
+   "typicalHigh": 20.0,
+   "rangeLow": 20.0,
+   "rangeHigh": 20.0,
+   "ballpark": false,
+   "variants": {
+    "Halloween": {
+     "low": 20.0,
+     "high": 20.0,
+     "traits": null
+    }
+   },
+   "image": "fumino-gearzino.webp",
+   "rarityPct": 0.014
+  },
+  {
+   "id": "giraffzilla",
+   "name": "Giraffzilla",
+   "typicalLow": 15.0,
+   "typicalHigh": 20.0,
+   "rangeLow": 10.0,
+   "rangeHigh": 35.0,
+   "ballpark": false,
+   "variants": {
+    "Jungle": {
+     "low": 10.0,
+     "high": 10.0,
+     "traits": 1
+    },
+    "Halloween": {
+     "low": 15.0,
+     "high": 15.0,
+     "traits": 1
+    },
+    "Void": {
+     "low": 35.0,
+     "high": 35.0,
+     "traits": null
+    }
+   },
+   "image": "giraffzilla.webp",
+   "rarityPct": 0.014
+  },
+  {
+   "id": "wreckzilla",
+   "name": "Wreckzilla",
+   "typicalLow": 15.0,
+   "typicalHigh": 25.0,
+   "rangeLow": 15.0,
+   "rangeHigh": 25.0,
+   "ballpark": false,
+   "variants": {
+    "Default": {
+     "low": 25.0,
+     "high": 25.0,
+     "traits": null
+    },
+    "Magical": {
+     "low": 15.0,
+     "high": 15.0,
+     "traits": 0
+    },
+    "Void": {
+     "low": 20.0,
+     "high": 20.0,
+     "traits": 5
+    }
+   },
+   "image": "wreckzilla.webp",
+   "rarityPct": 0.01
+  },
+  {
+   "id": "ghostero-cavallero",
+   "name": "Ghostero Cavallero",
+   "typicalLow": 30.0,
+   "typicalHigh": 40.0,
+   "rangeLow": 30.0,
+   "rangeHigh": 60.0,
+   "ballpark": false,
+   "variants": {
+    "Dreamy": {
+     "low": 30.0,
+     "high": 30.0,
+     "traits": null
+    },
+    "Summer": {
+     "low": 50.0,
+     "high": 50.0,
+     "traits": null
+    },
+    "Default": {
+     "low": 35.1,
+     "high": 35.1,
+     "traits": null
+    },
+    "Muertos": {
+     "low": 29.99,
+     "high": 29.99,
+     "traits": 1
+    }
+   },
+   "image": "ghostero-cavallero.webp",
+   "rarityPct": 0.008
+  },
+  {
+   "id": "guro-guro",
+   "name": "Guro Guro",
+   "typicalLow": 25.0,
+   "typicalHigh": 30.0,
+   "rangeLow": 15.0,
+   "rangeHigh": 30.0,
+   "ballpark": false,
+   "variants": {
+    "Gold": {
+     "low": 15.0,
+     "high": 15.0,
+     "traits": null
+    },
+    "Void": {
+     "low": 25.0,
+     "high": 25.0,
+     "traits": 1
+    },
+    "Default": {
+     "low": 30.0,
+     "high": 30.0,
+     "traits": null
+    },
+    "Muertos": {
+     "low": 30.0,
+     "high": 30.0,
+     "traits": 4
+    }
+   },
+   "image": "guro-guro.webp",
+   "rarityPct": 0.007
+  },
+  {
+   "id": "il-maledettones",
+   "name": "Il Maledettones",
+   "typicalLow": 75.0,
+   "typicalHigh": 150.0,
+   "rangeLow": 75.0,
+   "rangeHigh": 150.0,
+   "ballpark": true,
+   "variants": {},
+   "image": "il-maledettones.webp",
+   "rarityPct": 0.001
+  },
+  {
+   "id": "il-jackoleros",
+   "name": "Il Jackoleros",
+   "typicalLow": 120.0,
+   "typicalHigh": 190.0,
+   "rangeLow": 88.0,
+   "rangeHigh": 190.0,
+   "ballpark": false,
+   "variants": {
+    "Default": {
+     "low": 87.75,
+     "high": 87.75,
+     "traits": null
+    },
+    "Darkness": {
+     "low": 175.5,
+     "high": 175.5,
+     "traits": null
+    },
+    "Summer": {
+     "low": 120.0,
+     "high": 120.0,
+     "traits": 2
+    },
+    "Muertos": {
+     "low": 180.0,
+     "high": 180.0,
+     "traits": 4
+    },
+    "Aqua": {
+     "low": 160.0,
+     "high": 160.0,
+     "traits": 4
+    }
+   },
+   "image": "il-jackoleros.webp",
+   "rarityPct": null
+  },
+  {
+   "id": "spectrella",
+   "name": "Spectrella",
+   "typicalLow": 70.0,
+   "typicalHigh": 140.0,
+   "rangeLow": 70.0,
+   "rangeHigh": 140.0,
+   "ballpark": false,
+   "variants": {
+    "Default": {
+     "low": 70.2,
+     "high": 70.2,
+     "traits": null
+    },
+    "Heaven": {
+     "low": 140.4,
+     "high": 140.4,
+     "traits": null
+    }
+   },
+   "image": "spectrella.webp",
+   "rarityPct": 0.0012
+  },
+  {
+   "id": "kango-puncho",
+   "name": "Kango Puncho",
+   "typicalLow": 20.0,
+   "typicalHigh": 40.0,
+   "rangeLow": 15.0,
+   "rangeHigh": 40.0,
+   "ballpark": false,
+   "variants": {
+    "Default": {
+     "low": 15.0,
+     "high": 15.0,
+     "traits": null
+    }
+   },
+   "image": "kango-puncho.webp",
+   "rarityPct": 0.017
+  },
+  {
+   "id": "duocavallo",
+   "name": "Duocavallo",
+   "typicalLow": 10.0,
+   "typicalHigh": 20.0,
+   "rangeLow": 8.0,
+   "rangeHigh": 45.0,
+   "ballpark": false,
+   "variants": {
+    "Jungle": {
+     "low": 20.0,
+     "high": 20.0,
+     "traits": 4
+    },
+    "Dreamy": {
+     "low": 10.0,
+     "high": 10.0,
+     "traits": 4
+    },
+    "Gothic": {
+     "low": 10.0,
+     "high": 10.0,
+     "traits": null
+    },
+    "Default": {
+     "low": 45.0,
+     "high": 45.0,
+     "traits": null
+    }
+   },
+   "image": null,
+   "rarityPct": null
+  },
+  {
+   "id": "capitano-mortarino",
+   "name": "Capitano Mortarino",
+   "typicalLow": 18.0,
+   "typicalHigh": 29.0,
+   "rangeLow": 18.0,
+   "rangeHigh": 29.0,
+   "ballpark": false,
+   "variants": {
+    "Muertos": {
+     "low": 29.25,
+     "high": 29.25,
+     "traits": null
+    },
+    "Default": {
+     "low": 17.55,
+     "high": 17.55,
+     "traits": null
+    }
+   },
+   "image": null,
+   "rarityPct": 0.012
+  },
+  {
+   "id": "catrina-matadora",
+   "name": "Catrina Matadora",
+   "typicalLow": 35.0,
+   "typicalHigh": 40.0,
+   "rangeLow": 35.0,
+   "rangeHigh": 40.0,
+   "ballpark": false,
+   "variants": {
+    "Default": {
+     "low": 40.0,
+     "high": 40.0,
+     "traits": null
+    }
+   },
+   "image": "catrina-matadora.webp",
+   "rarityPct": null
+  },
+  {
+   "id": "pavoloco",
+   "name": "Pavoloco",
+   "typicalLow": 10.0,
+   "typicalHigh": 10.0,
+   "rangeLow": 10.0,
+   "rangeHigh": 10.0,
+   "ballpark": false,
+   "variants": {
+    "Default": {
+     "low": 10.0,
+     "high": 10.0,
+     "traits": null
+    }
+   },
+   "image": "pavoloco.webp",
+   "rarityPct": null
+  },
+  {
+   "id": "la-royals",
+   "name": "La Royals",
+   "typicalLow": 100.0,
+   "typicalHigh": 100.0,
+   "rangeLow": 100.0,
+   "rangeHigh": 100.0,
+   "ballpark": false,
+   "variants": {
+    "Default": {
+     "low": 100.0,
+     "high": 100.0,
+     "traits": null
+    }
+   },
+   "image": "la-royals.webp",
+   "rarityPct": null
+  },
+  {
+   "id": "la-monster-spookolah",
+   "name": "La Monster Spookolah",
+   "typicalLow": 20.0,
+   "typicalHigh": 20.0,
+   "rangeLow": 20.0,
+   "rangeHigh": 20.0,
+   "ballpark": false,
+   "variants": {
+    "Default": {
+     "low": 20.0,
+     "high": 20.0,
+     "traits": null
+    }
+   },
+   "image": "la-monster-spookolah.webp",
+   "rarityPct": null
+  },
+  {
+   "id": "scarabella",
+   "name": "Scarabella",
+   "typicalLow": 5.0,
+   "typicalHigh": 15.0,
+   "rangeLow": 1.0,
+   "rangeHigh": 20.0,
+   "ballpark": false,
+   "variants": {
+    "Default": {
+     "low": 5.0,
+     "high": 5.0,
+     "traits": null
+    },
+    "Neon": {
+     "low": 15.0,
+     "high": 15.0,
+     "traits": null
+    },
+    "Summer": {
+     "low": 20.0,
+     "high": 20.0,
+     "traits": null
+    },
+    "Jungle": {
+     "low": 1.0,
+     "high": 2.0,
+     "traits": null
+    }
+   },
+   "image": "scarabella.webp",
+   "rarityPct": 1.0
+  },
+  {
+   "id": "disco-roller",
+   "name": "Disco Roller",
+   "typicalLow": 3.0,
+   "typicalHigh": 18.0,
+   "rangeLow": 3.0,
+   "rangeHigh": 18.0,
+   "ballpark": false,
+   "variants": {
+    "Default": {
+     "low": 3.0,
+     "high": 3.0,
+     "traits": null
+    }
+   },
+   "image": "disco-roller.webp",
+   "rarityPct": 0.4
+  },
+  {
+   "id": "cakino-birthino",
+   "name": "Cakino Birthino",
+   "typicalLow": 2.0,
+   "typicalHigh": 4.0,
+   "rangeLow": 2.0,
+   "rangeHigh": 4.0,
+   "ballpark": false,
+   "variants": {
+    "Default": {
+     "low": 2.0,
+     "high": 2.0,
+     "traits": null
+    }
+   },
+   "image": "cakino-birthino.webp",
+   "rarityPct": null
+  },
+  {
+   "id": "jackodusa",
+   "name": "Jackodusa",
+   "typicalLow": 20.0,
+   "typicalHigh": 20.0,
+   "rangeLow": 20.0,
+   "rangeHigh": 20.0,
+   "ballpark": false,
+   "variants": {
+    "Rainbow": {
+     "low": 20.0,
+     "high": 20.0,
+     "traits": null
+    }
+   },
+   "image": "jackodusa.webp",
+   "rarityPct": null
+  },
+  {
+   "id": "la-easter-eggolah",
+   "name": "La Easter Eggolah",
+   "typicalLow": 10.0,
+   "typicalHigh": 20.0,
+   "rangeLow": 2.0,
+   "rangeHigh": 20.0,
+   "ballpark": true,
+   "variants": {},
+   "image": "la-easter-eggolah.webp",
+   "rarityPct": null
+  },
+  {
+   "id": "stadiozilla",
+   "name": "Stadiozilla",
+   "typicalLow": 10.0,
+   "typicalHigh": 15.0,
+   "rangeLow": 5.0,
+   "rangeHigh": 17.55,
+   "ballpark": true,
+   "variants": {},
+   "image": "stadiozilla.webp",
+   "rarityPct": null
+  },
+  {
+   "id": "goatinio-messillinio",
+   "name": "Goatinio Messillinio",
+   "typicalLow": 50.0,
+   "typicalHigh": 100.0,
+   "rangeLow": 50.0,
+   "rangeHigh": 100.0,
+   "ballpark": true,
+   "variants": {},
+   "image": "goatinio-messillinio.webp",
+   "rarityPct": null
+  },
+  {
+   "id": "lionaldo",
+   "name": "Lionaldo",
+   "typicalLow": 50.0,
+   "typicalHigh": 100.0,
+   "rangeLow": 50.0,
+   "rangeHigh": 100.0,
+   "ballpark": true,
+   "variants": {},
+   "image": "lionaldo.webp",
+   "rarityPct": null
+  },
+  {
+   "id": "tiramisubmarini",
+   "name": "Tiramisubmarini",
+   "typicalLow": 6.0,
+   "typicalHigh": 18.0,
+   "rangeLow": 5.85,
+   "rangeHigh": 20.0,
+   "ballpark": false,
+   "variants": {
+    "Dreamy": {
+     "low": 15.0,
+     "high": 15.0,
+     "traits": null
+    },
+    "Halloween": {
+     "low": 20.0,
+     "high": 20.0,
+     "traits": null
+    },
+    "Default": {
+     "low": 5.85,
+     "high": 17.55,
+     "traits": null
+    }
+   },
+   "image": "tiramisubmarini.webp",
+   "rarityPct": null
+  },
+  {
+   "id": "trippi-troppi-troppa-trippa",
+   "name": "Trippi Troppi Troppa Trippa",
+   "typicalLow": 5.0,
+   "typicalHigh": 15.0,
+   "rangeLow": 5.0,
+   "rangeHigh": 20.0,
+   "ballpark": true,
+   "variants": {},
+   "image": "trippi-troppi-troppa-trippa.webp",
+   "rarityPct": null
+  },
+  {
+   "id": "il-costruttore-di-pomodori",
+   "name": "Il Costruttore Di Pomodori",
+   "typicalLow": 10.0,
+   "typicalHigh": 20.0,
+   "rangeLow": 10.0,
+   "rangeHigh": 25.0,
+   "ballpark": true,
+   "variants": {},
+   "image": "il-costruttore-di-pomodori.webp",
+   "rarityPct": null
+  },
+  {
+   "id": "linguicine-serpentine",
+   "name": "Linguicine Serpentine",
+   "typicalLow": 4.0,
+   "typicalHigh": 4.0,
+   "rangeLow": 4.0,
+   "rangeHigh": 4.0,
+   "ballpark": false,
+   "variants": {
+    "Rave": {
+     "low": 4.0,
+     "high": 4.0,
+     "traits": null
+    }
+   },
+   "image": "linguicine-serpentine.webp",
+   "rarityPct": null
+  },
+  {
+   "id": "popocatepelini-popozini",
+   "name": "Popocatepelini Popozini",
+   "typicalLow": 5.0,
+   "typicalHigh": 5.0,
+   "rangeLow": 5.0,
+   "rangeHigh": 5.0,
+   "ballpark": false,
+   "variants": {
+    "Default": {
+     "low": 5.0,
+     "high": 5.0,
+     "traits": null
+    }
+   },
+   "image": "popocatepelini-popozini.webp",
+   "rarityPct": null
+  },
+  {
+   "id": "rhino-helicopterino",
+   "name": "Rhino Helicopterino",
+   "typicalLow": 12.0,
+   "typicalHigh": 12.0,
+   "rangeLow": 12.0,
+   "rangeHigh": 12.0,
+   "ballpark": false,
+   "variants": {
+    "Default": {
+     "low": 11.7,
+     "high": 11.7,
+     "traits": null
+    }
+   },
+   "image": "rhino-helicopterino.webp",
+   "rarityPct": null
+  },
+  {
+   "id": "auglurini-arbuzini",
+   "name": "Auglurini Arbuzini",
+   "typicalLow": 15.0,
+   "typicalHigh": 30.0,
+   "rangeLow": 15.0,
+   "rangeHigh": 30.0,
+   "ballpark": true,
+   "variants": {},
+   "image": "auglurini-arbuzini.webp",
+   "rarityPct": null
+  },
+  {
+   "id": "jacko-whacko",
+   "name": "Jacko Whacko",
+   "typicalLow": 1.0,
+   "typicalHigh": 30.0,
+   "rangeLow": 1.0,
+   "rangeHigh": 30.0,
+   "ballpark": false,
+   "variants": {
+    "Default": {
+     "low": 1.0,
+     "high": 1.0,
+     "traits": null
+    }
+   },
+   "image": "jacko-whacko.webp",
+   "rarityPct": null
+  }
+ ],
+ "mutations": [
+  "Default",
+  "Gold",
+  "Diamond",
+  "Galaxy",
+  "Zombie",
+  "Dreamy",
+  "Ice and Fire",
+  "Carnival",
+  "Aqua",
+  "Neon",
+  "Rainbow",
+  "Halloween",
+  "Darkness",
+  "Toxic",
+  "Lovely",
+  "Chocolate",
+  "Christmas",
+  "Heaven",
+  "Void",
+  "Crystal",
+  "Magical",
+  "Gothic",
+  "Jungle",
+  "Summer",
+  "Rave",
+  "Muertos",
+  "Spooky",
+  "Bee",
+  "Football"
+ ],
+ "mutationFactors": {
+  "Aqua": 0.64,
+  "Bee": 0.86,
+  "Crystal": 1.15,
+  "Darkness": 1.1,
+  "Diamond": 0.89,
+  "Dreamy": 0.86,
+  "Gold": 0.67,
+  "Gothic": 0.84,
+  "Halloween": 1.17,
+  "Heaven": 0.99,
+  "Jungle": 1.07,
+  "Lovely": 2.97,
+  "Magical": 1.0,
+  "Muertos": 1.24,
+  "Neon": 0.9,
+  "Rainbow": 1.0,
+  "Rave": 0.96,
+  "Spooky": 1.27,
+  "Summer": 1.09,
+  "Toxic": 1.33,
+  "Void": 1.16
+ },
+ "traits": [
+  {
+   "name": "Lightning",
+   "mult": 2.5
+  },
+  {
+   "name": "Ice",
+   "mult": 3
+  },
+  {
+   "name": "Fireworks",
+   "mult": 3
+  },
+  {
+   "name": "Cupid",
+   "mult": 3.5
+  },
+  {
+   "name": "Wave",
+   "mult": 4
+  },
+  {
+   "name": "Tung",
+   "mult": 4
+  },
+  {
+   "name": "Carp",
+   "mult": 4
+  },
+  {
+   "name": "Bats",
+   "mult": 4
+  },
+  {
+   "name": "Glitch",
+   "mult": 4
+  },
+  {
+   "name": "Forest",
+   "mult": 4.5
+  },
+  {
+   "name": "Pumpkin",
+   "mult": 5
+  },
+  {
+   "name": "Skibidi",
+   "mult": 6
+  },
+  {
+   "name": "Ghost",
+   "mult": null
+  },
+  {
+   "name": "Frost",
+   "mult": null
+  },
+  {
+   "name": "Cake",
+   "mult": null
+  },
+  {
+   "name": "Frozen",
+   "mult": null
+  }
+ ],
+ "traitRule": {
+  "rule": "base * (1+r)^extraTraits, capped at 3.5x base",
+  "rates": {
+   "baseUnder10": 0.05,
+   "base10to50": 0.12,
+   "baseOver50": 0.2
+  },
+  "note": "extraTraits = trait count above the traits already counted in a confirmed variant listing. See ~/workspace/brainrot-prices/research/traits.md."
+ },
+ "rarityEternal": [
+  {
+   "name": "Meccavallo",
+   "pct": 5.0
+  },
+  {
+   "name": "Capanna Distruttore",
+   "pct": 4.0
+  },
+  {
+   "name": "Wreckspire Roller",
+   "pct": 3.0
+  },
+  {
+   "name": "Serpientare Baturo",
+   "pct": 2.5
+  },
+  {
+   "name": "Cornzilla",
+   "pct": 2.0
+  },
+  {
+   "name": "Alligarto Alligarto",
+   "pct": 1.5
+  },
+  {
+   "name": "Scarabella",
+   "pct": 1.0
+  },
+  {
+   "name": "Disco Roller",
+   "pct": 0.4
+  },
+  {
+   "name": "Pavonaccio",
+   "pct": 0.2
+  },
+  {
+   "name": "Vulturino Skeletono",
+   "pct": 0.19
+  },
+  {
+   "name": "El Crunchador",
+   "pct": 0.12
+  },
+  {
+   "name": "Gigalitraktos Spidorobos",
+   "pct": 0.11
+  },
+  {
+   "name": "Burguro dan Fryuro",
+   "pct": 0.1
+  },
+  {
+   "name": "Galaxio Astro",
+   "pct": 0.09
+  },
+  {
+   "name": "Arcangelo Mantisio",
+   "pct": 0.08
+  },
+  {
+   "name": "Salsicino Furiosino",
+   "pct": 0.07
+  },
+  {
+   "name": "Turbino Supremo",
+   "pct": 0.07
+  },
+  {
+   "name": "Garbagzilla",
+   "pct": 0.06
+  },
+  {
+   "name": "Celesto Tortello",
+   "pct": 0.05
+  },
+  {
+   "name": "Krabaracade",
+   "pct": 0.05
+  },
+  {
+   "name": "DiggoBlock",
+   "pct": 0.04
+  },
+  {
+   "name": "Fishini Mechinini",
+   "pct": 0.035
+  },
+  {
+   "name": "Buzz Buzzini Guardini",
+   "pct": 0.03
+  },
+  {
+   "name": "Sunculus Ferris",
+   "pct": 0.025
+  },
+  {
+   "name": "Kango Puncho",
+   "pct": 0.017
+  },
+  {
+   "name": "Cannone Maledettone",
+   "pct": 0.016
+  },
+  {
+   "name": "Lady Pegasina",
+   "pct": 0.016
+  },
+  {
+   "name": "Fumino Gearzino",
+   "pct": 0.014
+  },
+  {
+   "name": "Giraffzilla",
+   "pct": 0.014
+  },
+  {
+   "name": "Capitano Mortarino",
+   "pct": 0.012
+  },
+  {
+   "name": "Wreckzilla",
+   "pct": 0.01
+  },
+  {
+   "name": "Ghostero Cavallero",
+   "pct": 0.008
+  },
+  {
+   "name": "Guro Guro",
+   "pct": 0.007
+  },
+  {
+   "name": "Gladiagatto e Rattino",
+   "pct": 0.006
+  },
+  {
+   "name": "Harpanzee",
+   "pct": 0.006
+  },
+  {
+   "name": "Magico Moonman",
+   "pct": 0.005
+  },
+  {
+   "name": "Vulkarion",
+   "pct": 0.004
+  },
+  {
+   "name": "Scorpidusa Spiderusa",
+   "pct": 0.004
+  },
+  {
+   "name": "Antoni Stongoni",
+   "pct": 0.004
+  },
+  {
+   "name": "Bullzilla",
+   "pct": 0.004
+  },
+  {
+   "name": "Jetzilla",
+   "pct": 0.003
+  },
+  {
+   "name": "Mecha Traladone",
+   "pct": 0.0026
+  },
+  {
+   "name": "Carouselino",
+   "pct": 0.0025
+  },
+  {
+   "name": "Iceberry Mammoth",
+   "pct": 0.0012
+  },
+  {
+   "name": "Spectrella",
+   "pct": 0.0012
+  },
+  {
+   "name": "Marionarch",
+   "pct": 0.0012
+  },
+  {
+   "name": "Il Maledettones",
+   "pct": 0.001
+  }
+ ],
+ "rarityAbsolute": [
+  {
+   "name": "Din Don Skeleton",
+   "pct": 0.0005,
+   "img": "din-don-skeleton.webp"
+  },
+  {
+   "name": "El Toro Pistoloro",
+   "pct": 0.0004,
+   "img": "el-toro-pistoloro.webp"
+  },
+  {
+   "name": "Mobytron",
+   "pct": 0.0003,
+   "img": "mobytron.webp"
+  },
+  {
+   "name": "Cerberwolf",
+   "pct": 0.0003,
+   "img": "cerberwolf.webp"
+  },
+  {
+   "name": "Hydragoni Skeletoni",
+   "pct": 0.0003,
+   "img": "hydragoni-skeletoni.webp"
+  },
+  {
+   "name": "Crystune",
+   "pct": 0.0001,
+   "img": null
+  }
+ ],
+ "rarityGoat": {
+  "name": "Skibidi Toilet",
+  "pctTier13": 0.0002,
+  "pctFixed": 1e-06,
+  "img": "skibidi-toilet-game-icon.png"
+ }
+}

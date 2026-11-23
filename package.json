@@ -1,0 +1,17 @@
+{
+  "name": "brainrot-website",
+  "version": "1.0.0",
+  "description": "Brainrot Trades — standalone public website for the Fortnite Steal the Brainrot trading community. Price list, trade checker, rarity chart, live chat, trade board, For Sale, $3/month PayPal subscriptions.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^5.3.0",
+    "nodemailer": "^10.6.1"
+  }
+}

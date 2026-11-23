@@ -1,0 +1,30 @@
+# Render free tier: Node 22 web service. No build step beyond npm install.
+# The database is SQLite in data/app.db — on Render's free tier the
+# filesystem is ephemeral, so member data resets when the service redeploys.
+# See README.md "Free hosting (Render)" for the caveats and the paid move.
+services:
+  - type: web
+    name: brainrot-trades
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: node server.js
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: PAYPAL_CLIENT_SECRET
+        sync: false
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_PORT
+        value: "587"
+      - key: SMTP_SECURE
+        value: "false"
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
+        sync: false
+      - key: SMTP_FROM
+        sync: false
