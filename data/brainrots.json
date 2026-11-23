@@ -1350,47 +1350,6 @@
    "rarityPct": null
   },
   {
-   "id": "meccavallo",
-   "name": "Meccavallo",
-   "typicalLow": 1.0,
-   "typicalHigh": 3.0,
-   "rangeLow": 1.0,
-   "rangeHigh": 3.0,
-   "ballpark": false,
-   "variants": {
-    "Gothic": {
-     "low": 1.0,
-     "high": 1.0,
-     "traits": null
-    },
-    "Default": {
-     "low": 3.0,
-     "high": 3.0,
-     "traits": null
-    }
-   },
-   "image": "meccavallo.webp",
-   "rarityPct": 5.0
-  },
-  {
-   "id": "capanna-distruttore",
-   "name": "Capanna Distruttore",
-   "typicalLow": 5.0,
-   "typicalHigh": 5.0,
-   "rangeLow": 5.0,
-   "rangeHigh": 5.0,
-   "ballpark": false,
-   "variants": {
-    "Diamond": {
-     "low": 5.0,
-     "high": 5.0,
-     "traits": null
-    }
-   },
-   "image": "capanna-distruttore.webp",
-   "rarityPct": 4.0
-  },
-  {
    "id": "los-chimpanzini-princinis",
    "name": "Los Chimpanzini Princinis",
    "typicalLow": 5.0,
@@ -1424,29 +1383,6 @@
    },
    "image": "wreckspire-roller.webp",
    "rarityPct": 3.0
-  },
-  {
-   "id": "serpientare-baturo",
-   "name": "Serpientare Baturo",
-   "typicalLow": 30.0,
-   "typicalHigh": 55.0,
-   "rangeLow": 30.0,
-   "rangeHigh": 55.0,
-   "ballpark": false,
-   "variants": {
-    "Dreamy": {
-     "low": 30.0,
-     "high": 30.0,
-     "traits": null
-    },
-    "Default": {
-     "low": 55.0,
-     "high": 55.0,
-     "traits": null
-    }
-   },
-   "image": "serpientare-baturo.webp",
-   "rarityPct": 2.5
   },
   {
    "id": "cornzilla",
@@ -2096,57 +2032,6 @@
    "rarityPct": null
   },
   {
-   "id": "scarabella",
-   "name": "Scarabella",
-   "typicalLow": 5.0,
-   "typicalHigh": 15.0,
-   "rangeLow": 1.0,
-   "rangeHigh": 20.0,
-   "ballpark": false,
-   "variants": {
-    "Default": {
-     "low": 5.0,
-     "high": 5.0,
-     "traits": null
-    },
-    "Neon": {
-     "low": 15.0,
-     "high": 15.0,
-     "traits": null
-    },
-    "Summer": {
-     "low": 20.0,
-     "high": 20.0,
-     "traits": null
-    },
-    "Jungle": {
-     "low": 1.0,
-     "high": 2.0,
-     "traits": null
-    }
-   },
-   "image": "scarabella.webp",
-   "rarityPct": 1.0
-  },
-  {
-   "id": "disco-roller",
-   "name": "Disco Roller",
-   "typicalLow": 3.0,
-   "typicalHigh": 18.0,
-   "rangeLow": 3.0,
-   "rangeHigh": 18.0,
-   "ballpark": false,
-   "variants": {
-    "Default": {
-     "low": 3.0,
-     "high": 3.0,
-     "traits": null
-    }
-   },
-   "image": "disco-roller.webp",
-   "rarityPct": 0.4
-  },
-  {
    "id": "cakino-birthino",
    "name": "Cakino Birthino",
    "typicalLow": 2.0,
@@ -2192,18 +2077,6 @@
    "ballpark": true,
    "variants": {},
    "image": "la-easter-eggolah.webp",
-   "rarityPct": null
-  },
-  {
-   "id": "stadiozilla",
-   "name": "Stadiozilla",
-   "typicalLow": 10.0,
-   "typicalHigh": 15.0,
-   "rangeLow": 5.0,
-   "rangeHigh": 17.55,
-   "ballpark": true,
-   "variants": {},
-   "image": "stadiozilla.webp",
    "rarityPct": null
   },
   {
@@ -2259,18 +2132,6 @@
    "rarityPct": null
   },
   {
-   "id": "il-costruttore-di-pomodori",
-   "name": "Il Costruttore Di Pomodori",
-   "typicalLow": 10.0,
-   "typicalHigh": 20.0,
-   "rangeLow": 10.0,
-   "rangeHigh": 25.0,
-   "ballpark": true,
-   "variants": {},
-   "image": "il-costruttore-di-pomodori.webp",
-   "rarityPct": null
-  },
-  {
    "id": "linguicine-serpentine",
    "name": "Linguicine Serpentine",
    "typicalLow": 4.0,
@@ -2289,42 +2150,6 @@
    "rarityPct": null
   },
   {
-   "id": "popocatepelini-popozini",
-   "name": "Popocatepelini Popozini",
-   "typicalLow": 5.0,
-   "typicalHigh": 5.0,
-   "rangeLow": 5.0,
-   "rangeHigh": 5.0,
-   "ballpark": false,
-   "variants": {
-    "Default": {
-     "low": 5.0,
-     "high": 5.0,
-     "traits": null
-    }
-   },
-   "image": "popocatepelini-popozini.webp",
-   "rarityPct": null
-  },
-  {
-   "id": "rhino-helicopterino",
-   "name": "Rhino Helicopterino",
-   "typicalLow": 12.0,
-   "typicalHigh": 12.0,
-   "rangeLow": 12.0,
-   "rangeHigh": 12.0,
-   "ballpark": false,
-   "variants": {
-    "Default": {
-     "low": 11.7,
-     "high": 11.7,
-     "traits": null
-    }
-   },
-   "image": "rhino-helicopterino.webp",
-   "rarityPct": null
-  },
-  {
    "id": "auglurini-arbuzini",
    "name": "Auglurini Arbuzini",
    "typicalLow": 15.0,
@@ -2334,24 +2159,6 @@
    "ballpark": true,
    "variants": {},
    "image": "auglurini-arbuzini.webp",
-   "rarityPct": null
-  },
-  {
-   "id": "jacko-whacko",
-   "name": "Jacko Whacko",
-   "typicalLow": 1.0,
-   "typicalHigh": 30.0,
-   "rangeLow": 1.0,
-   "rangeHigh": 30.0,
-   "ballpark": false,
-   "variants": {
-    "Default": {
-     "low": 1.0,
-     "high": 1.0,
-     "traits": null
-    }
-   },
-   "image": "jacko-whacko.webp",
    "rarityPct": null
   }
  ],
@@ -2486,20 +2293,8 @@
  },
  "rarityEternal": [
   {
-   "name": "Meccavallo",
-   "pct": 5.0
-  },
-  {
-   "name": "Capanna Distruttore",
-   "pct": 4.0
-  },
-  {
    "name": "Wreckspire Roller",
    "pct": 3.0
-  },
-  {
-   "name": "Serpientare Baturo",
-   "pct": 2.5
   },
   {
    "name": "Cornzilla",
@@ -2508,14 +2303,6 @@
   {
    "name": "Alligarto Alligarto",
    "pct": 1.5
-  },
-  {
-   "name": "Scarabella",
-   "pct": 1.0
-  },
-  {
-   "name": "Disco Roller",
-   "pct": 0.4
   },
   {
    "name": "Pavonaccio",
