@@ -231,6 +231,7 @@ CREATE TABLE IF NOT EXISTS sale_comments (
 try { db.exec('ALTER TABLE users ADD COLUMN google_id TEXT'); } catch (e) { /* column already exists */ }
 db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_users_google_id ON users(google_id)');
 try { db.exec('ALTER TABLE sale_listings ADD COLUMN mutation TEXT'); } catch (e) { /* column already exists */ }
+try { db.exec('ALTER TABLE sale_listings ADD COLUMN custom_name TEXT'); } catch (e) { /* column already exists */ }
 
 // ---------- mail ----------
 // SendGrid (HTTPS) is preferred when configured — Render blocks outbound
@@ -779,20 +780,28 @@ app.get('/api/sales', requireAccess, (req, res) => {
   const commentCounts = new Map(db.prepare('SELECT listing_id, COUNT(*) c FROM sale_comments GROUP BY listing_id').all().map(r => [r.listing_id, r.c]));
   res.json({ sales: rows.map(r => {
     const item = items.get(r.brainrot_id);
-    return { ...r, image: r.image_url || (item && item.image ? `/img/brainrots/${item.image}` : null), brainrotName: item ? item.name : r.brainrot_id, gamePicture: !r.image_url,
+    return { ...r, image: r.image_url || (item && item.image ? `/img/brainrots/${item.image}` : null), brainrotName: item ? item.name : (r.custom_name || r.brainrot_id), gamePicture: !r.image_url,
       likeCount: likeCounts.get(r.id) || 0, likedByMe: myLikes.has(r.id), commentCount: commentCounts.get(r.id) || 0 };
   }) });
 });
 app.post('/api/sales', requireAccess, (req, res) => {
-  const { brainrotId, priceUsd, description, imageUrl, mutation } = req.body || {};
-  const item = findItem(brainrotId);
-  if (!item) return res.status(400).json({ error: 'Pick a brainrot to sell.' });
+  const { brainrotId, priceUsd, description, imageUrl, mutation, customName } = req.body || {};
+  // "Other" — a brainrot we missed from the list: the seller types its name.
+  // Anything else must be one of the 77 Eternals in the list.
+  let custom = null;
+  if (brainrotId === 'other') {
+    custom = String(customName || '').replace(/[<>]/g, '').trim().slice(0, 60);
+    if (!custom) return res.status(400).json({ error: 'Type the brainrot\'s name.' });
+  } else {
+    const item = findItem(brainrotId);
+    if (!item) return res.status(400).json({ error: 'Pick a brainrot to sell.' });
+  }
   const price = Number(priceUsd);
   if (!price || price <= 0 || price > 100000) return res.status(400).json({ error: 'Enter a sensible price in USD.' });
   if (imageUrl && !/^https?:\/\//.test(imageUrl) && !imageUrl.startsWith('/uploads/')) return res.status(400).json({ error: 'Image must be a full http(s) URL, or leave it blank to use the game picture.' });
   const mut = (brainrotsData.mutations || []).includes(mutation) ? mutation : 'Default';
-  const info = db.prepare('INSERT INTO sale_listings (user_id, username, brainrot_id, price_usd, description, image_url, mutation, created_at) VALUES (?,?,?,?,?,?,?,?)')
-    .run(req.user.id, req.user.username, brainrotId, price, String(description || '').slice(0, 500), imageUrl || null, mut, nowIso());
+  const info = db.prepare('INSERT INTO sale_listings (user_id, username, brainrot_id, price_usd, description, image_url, mutation, custom_name, created_at) VALUES (?,?,?,?,?,?,?,?,?)')
+    .run(req.user.id, req.user.username, brainrotId, price, String(description || '').slice(0, 500), imageUrl || null, mut, custom, nowIso());
   res.json({ ok: true, id: Number(info.lastInsertRowid) });
 });
 // ---------- sale picture upload ----------
