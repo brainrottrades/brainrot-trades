@@ -58,11 +58,11 @@ function imgHtml(item, cls) {
   return '<span class="no-pic">NO PICTURE YET</span>';
 }
 function finePrintHtml() {
-  return '<footer class="site">Brainrot Trades is a price guide and meeting place only. '
+  return '<footer class="site">Brainrot Trades is a price guide and meeting place only, for Fortnite Steal the Brainrot (Creative) — Eternals only, no Secrets and no base brainrots, and not the Roblox game. '
     + 'We are not a party to any trade, sale or private deal, we do not hold money or brainrots, '
     + 'and we are not liable for anything that happens between members — including scams, '
     + 'lost items or lost money. Trade at your own risk: check prices, use a middleman you trust, '
-    + 'and never send money first to a stranger. <a href="/privacy">Privacy policy</a></footer>';
+    + 'and never send money first to a stranger. Fan-made guide, not affiliated with Epic Games, Fortnite, SpyderSammy, or the Roblox game Steal a Brainrot. All trademarks belong to their owners. If you own an image shown here and want it removed, contact pgevil22@gmail.com. <a href="/privacy">Privacy policy</a></footer>';
 }
 
 // ---------- API ----------
@@ -217,7 +217,7 @@ ROUTES.home = async function () {
   try { preview = (await get('/api/preview')).items; } catch (e) { preview = []; }
   const price = state.cfg ? state.cfg.priceUsd : 3;
   const feats = [
-    ['Price list', 'All 88 Eternal brainrots priced, with pictures — every brainrot has a ballpark price.'],
+    ['Price list', 'All 87 Eternal brainrots priced, with pictures — every brainrot has a ballpark price.'],
     ['Trade checker', 'Check any brainrot by mutation and traits, and compare two brainrots to see if a trade is worth it.'],
     ['Rarity chart', 'Every Eternal ranked least rarest to rarest, plus Absolute and GOAT rarities.'],
     ['Live chat', 'Talk with other players and organise trades in real time.'],
@@ -229,7 +229,7 @@ ROUTES.home = async function () {
   view.innerHTML =
     '<section class="hero card"><img class="hero-icon" src="/img/skibidi-toilet.png" alt="Skibidi Toilet">' +
     '<h1>Brainrot Trades</h1>' +
-    '<p class="muted">Fortnite Steal the Brainrot — prices, trades, rarity and a safe place to buy, sell and trade.</p>' +
+    '<p class="muted">Fortnite Steal the Brainrot (Creative map 3225-0366-8885) — Eternals only. Prices, trades, rarity and a safe place to buy, sell and trade. Not the Roblox game.</p>' +
     '<p class="price-tag">$' + price + '/month</p>' +
     '<p class="muted">Everything in the app, one price. Cancel anytime.</p>' +
     (hasAccess()
@@ -245,7 +245,7 @@ ROUTES.home = async function () {
         '<div class="price">' + moneyRange(i.typicalLow, i.typicalHigh) + '</div>' +
         (i.ballpark ? ' <span class="badge ballpark">BALLPARK</span>' : '') +
         '</div></div>').join('') +
-      '</div><p class="muted small">Sample only — the full list of 88 brainrots is for members.</p>' +
+      '</div><p class="muted small">Sample only — the full list of 87 brainrots is for members.</p>' +
       (hasAccess() ? '' : '<p><a class="btn" href="#/signup">See all 88 — subscribe $' + price + '/month</a></p>') +
       '</div>' : '') +
     '<div class="card"><h2>How it works</h2><ol class="steps">' +
@@ -440,7 +440,7 @@ ROUTES.prices = async function () {
   const items = await ensureItems();
   view.innerHTML =
     '<div class="card"><h1>Price list</h1>' +
-    '<p class="muted">All 88 Eternal brainrots. Prices are sellers’ asking prices in USD (Nov 2026 snapshot), not sold prices. '
+    '<p class="muted">All 87 Eternal brainrots. Prices are sellers’ asking prices in USD (Nov 2026 snapshot), not sold prices. '
     + '“Ballpark” means an estimate — no confirmed listing was found.</p>' +
     '<div class="toolbar"><input id="q" type="search" placeholder="Search brainrots…" aria-label="Search brainrots"></div>' +
     '<div id="list" class="grid two"></div></div>' + finePrintHtml();
@@ -545,7 +545,7 @@ ROUTES.rarity = async function () {
   const maxPct = Math.max.apply(null, r.eternal.map(x => x.pct));
   view.innerHTML =
     '<div class="card"><h1>Rarity chart</h1>' +
-    '<p class="muted">Spawn chances at Luck Tier 13 (in-game index, Nov 22, 2026). Least rarest to rarest. Eternals only, plus Absolute and GOAT.</p>' +
+    '<p class="muted">Spawn chances at Luck Tier 13 (in-game index, Nov 22, 2026). Least rarest to rarest. Eternals only, plus Absolute and GOAT. Reference only — only Eternals can be listed for sale or posted on the trade board.</p>' +
     '<h2>Eternal</h2>' + r.eternal.map(row).join('') +
     '<h2 style="margin-top:16px">Absolute</h2>' + r.absolute.map(row).join('') +
     '<h2 style="margin-top:16px">GOAT</h2>' + row({ name: r.goat.name + ' — fixed 0.000001%, ignores all events, luck and multipliers (index shows 0.0002% at Tier 13)', pct: r.goat.pctTier13, image: r.goat.image }) +
@@ -618,7 +618,7 @@ ROUTES.trades = async function () {
   const opts = '<option value="">— any —</option>' + items.map(i => '<option value="' + esc(i.id) + '">' + esc(i.name) + '</option>').join('');
   view.innerHTML =
     '<div class="card"><h1>Trade board</h1>' +
-    '<p class="muted">Post what you have and what you want. Message a poster to work out a trade — check the price first.</p>' +
+    '<p class="muted">Post what you have and what you want. Message a poster to work out a trade — check the price first. <strong>Eternals only</strong> — no Secrets, no base brainrots. Fortnite Steal the Brainrot only, not the Roblox game.</p>' +
     '<form id="tradeForm"><label for="tTitle">Title</label><input id="tTitle" required maxlength="120" placeholder="e.g. Trading Gothic Vulkarion 2-trait">' +
     '<label for="tItem">Brainrot (optional)</label><select id="tItem">' + opts + '</select>' +
     '<label for="tHave">I have</label><input id="tHave" placeholder="What you are offering">' +
@@ -710,7 +710,7 @@ ROUTES.sales = async function () {
   const mutOpts = meta.mutations.map(m => '<option value="' + esc(m) + '">' + esc(m) + '</option>').join('');
   view.innerHTML =
     '<div class="card"><h1>For Sale</h1>' +
-    '<p class="muted">Brainrots listed by members, for real money. The seller sets their own price. Check the price list before you pay anything.</p>' +
+    '<p class="muted">Brainrots listed by members, for real money. The seller sets their own price. Check the price list before you pay anything. <strong>Eternals only</strong> — no Secrets, no base brainrots. Fortnite Steal the Brainrot only, not the Roblox game.</p>' +
     '<form id="saleForm"><label for="sItem">Brainrot</label><select id="sItem">' + opts + '</select>' +
     '<label for="sMut">Mutation</label><select id="sMut">' + mutOpts + '</select>' +
     '<label for="sPrice">Your price (USD)</label><input id="sPrice" type="number" min="1" max="100000" step="0.01" required placeholder="e.g. 30">' +
