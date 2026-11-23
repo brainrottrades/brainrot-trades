@@ -205,10 +205,11 @@ function paywallView(note) {
   view.innerHTML =
     '<div class="card paywall"><h1>Members only</h1>' +
     '<p>' + esc(note || 'The full site is for subscribers.') + '</p>' +
-    '<p class="price-tag">$' + price + '/month</p>' +
+    '<p class="price-tag">' + (state.cfg && state.cfg.trialAvailable ? 'First month free' : '$' + price + '/month') + '</p>' +
+    (state.cfg && state.cfg.trialAvailable ? '<p class="muted">Then $' + price + '/month. Your PayPal stays on file — it renews automatically.</p>' : '') +
     '<p class="muted">Price list, trade checker, rarity chart, live chat, trade board, For Sale, private messages and friends.</p>' +
     (loggedIn()
-      ? '<p><a class="btn" href="#/subscribe">Subscribe — $' + price + '/month</a></p>'
+      ? '<p><a class="btn" href="#/subscribe">Subscribe' + (state.cfg && state.cfg.trialAvailable ? ' — first month free' : ' — $' + price + '/month') + '</a></p>'
       : '<p><a class="btn" href="#/signup">Sign up</a> <a class="btn secondary" href="#/login">Log in</a></p>') +
     '</div>' + finePrintHtml();
 }
@@ -249,12 +250,12 @@ ROUTES.home = async function () {
         (i.ballpark ? ' <span class="badge ballpark">BALLPARK</span>' : '') +
         '</div></div>').join('') +
       '</div><p class="muted small">Sample only — the full list of 77 brainrots is for members.</p>' +
-      (hasAccess() ? '' : '<p><a class="btn" href="#/signup">See all 77 — subscribe $' + price + '/month</a></p>') +
+      (hasAccess() ? '' : '<p><a class="btn" href="#/signup">See all 77 — ' + (state.cfg && state.cfg.trialAvailable ? 'first month free' : 'subscribe $' + price + '/month') + '</a></p>') +
       '</div>' : '') +
     '<div class="card"><h2>How it works</h2><ol class="steps">' +
     '<li><strong>Sign up</strong> — pick a username and email.</li>' +
     '<li><strong>Verify</strong> — sign in with Google and you\'re verified instantly, or sign up with email and the owner approves you.</li>' +
-    '<li><strong>Subscribe $' + price + '/month</strong> — PayPal, cancel anytime. Full access right away.</li>' +
+    '<li><strong>' + (state.cfg && state.cfg.trialAvailable ? 'Subscribe — first month free, then $' + price + '/month' : 'Subscribe $' + price + '/month') + '</strong> — PayPal, cancel anytime. Full access right away.</li>' +
     '</ol></div>' +
     '<div class="card"><h2>Stay safe</h2><p class="muted">Check the price before you trade. Use a middleman you trust. Never send money first to a stranger. '
     + 'Every listing and message has a report button, and the owner reviews reports.</p></div>' +
@@ -360,6 +361,7 @@ ROUTES.subscribe = async function () {
     const sub = state.me.subscription;
     view.innerHTML = '<div class="card"><h1>Your subscription</h1>' +
       '<p>You have full access' + (sub && sub.endsAt ? ' until ' + esc(new Date(sub.endsAt).toLocaleDateString()) : '') + '.</p>' +
+      (sub && sub.isTrial ? '<p><strong>Free trial</strong> — your first month is free. After it ends, it renews at $' + price + '/month automatically until you cancel.</p>' : '') +
       (state.me.isAdmin
         ? '<p class="muted">Owner, co-owner and admin accounts get full access free — you are never charged.</p>'
         : '<p><button class="btn danger" id="cancelSub">Cancel subscription</button></p>' +
@@ -376,15 +378,26 @@ ROUTES.subscribe = async function () {
     };
     return;
   }
+  // Not subscribed yet: which plan? The free-trial plan on the first month
+  // (one per email), otherwise the standard $3/month plan.
+  let plan = null;
+  try { plan = await get('/api/subscribe/plan'); } catch (e) { plan = null; }
+  const planId = (plan && plan.planId) || (state.cfg && state.cfg.planId) || '';
+  const isTrial = !!(plan && plan.trialEligible);
   view.innerHTML = '<div class="card"><h1>Subscribe</h1>' +
-    '<p class="price-tag" style="font-size:2rem;font-weight:800;color:var(--accent)">$' + price + '/month</p>' +
+    (isTrial
+      ? '<p class="price-tag" style="font-size:2rem;font-weight:800;color:var(--accent)">First month free</p>' +
+        '<p>Then $' + price + '/month after that.</p>'
+      : '<p class="price-tag" style="font-size:2rem;font-weight:800;color:var(--accent)">$' + price + '/month</p>') +
     '<p>Full access to everything: price list, trade checker, rarity chart, live chat, trade board, For Sale, private messages and friends.</p>' +
-    '<ul class="feature-list"><li>Charged monthly until you cancel</li><li>Cancel anytime — access runs to the end of the paid month</li><li>Pay with PayPal</li></ul>' +
+    '<ul class="feature-list">' +
+      (isTrial ? '<li>First month free — one free month per email</li><li>Your PayPal stays on file — it renews automatically at $' + price + '/month after the free month</li>' : '<li>Charged monthly until you cancel</li>') +
+      '<li>Cancel anytime — access runs to the end of the paid month</li><li>Pay with PayPal</li></ul>' +
     '<div id="paypalButtons"></div>' +
     '<div id="formMsg"></div>' +
     '<p class="form-note">Payments go to the site owner via PayPal. Brainrot Trades is not a party to trades or sales between members.</p>' +
     '</div>' + finePrintHtml();
-  if (!state.cfg || !state.cfg.paypalConfigured) {
+  if (!state.cfg || !state.cfg.paypalConfigured || !planId) {
     $('#formMsg').innerHTML = '<div class="error">PayPal is not configured on this site yet. The owner needs to finish the PayPal setup.</div>';
     return;
   }
@@ -392,12 +405,12 @@ ROUTES.subscribe = async function () {
     await loadPayPalSdk();
     window.paypal.Buttons({
       style: { layout: 'vertical', color: 'gold', shape: 'rect', label: 'subscribe' },
-      createSubscription: (data, actions) => actions.subscription.create({ plan_id: state.cfg.planId }),
+      createSubscription: (data, actions) => actions.subscription.create({ plan_id: planId }),
       onApprove: async (data) => {
         try {
-          const r = await post('/api/subscribe/activate', { subscriptionId: data.subscriptionID });
+          const r = await post('/api/subscribe/activate', { subscriptionId: data.subscriptionID, planId });
           await loadMe();
-          toast('Subscribed — welcome!');
+          toast(isTrial ? 'Free trial started — welcome!' : 'Subscribed — welcome!');
           if (r.verifiedWithPayPal === false) {
             toast('Subscribed. Note: the site has not verified this subscription with PayPal yet (owner setup).');
           }
