@@ -751,6 +751,7 @@ app.get('/api/trades', requireAccess, (req, res) => {
 app.post('/api/trades', requireAccess, (req, res) => {
   const { title, brainrotId, haveText, wantText } = req.body || {};
   if (!title || !String(title).trim()) return res.status(400).json({ error: 'Give your trade a title.' });
+  if (brainrotId && !findItem(brainrotId)) return res.status(400).json({ error: 'Pick a brainrot from the list (Eternals only).' });
   const info = db.prepare('INSERT INTO trade_posts (user_id, username, title, brainrot_id, have_text, want_text, created_at) VALUES (?,?,?,?,?,?,?)')
     .run(req.user.id, req.user.username, String(title).trim().slice(0, 120), brainrotId || null, haveText || '', wantText || '', nowIso());
   res.json({ ok: true, id: Number(info.lastInsertRowid) });
