@@ -8,7 +8,7 @@
  *
  * Config:
  *   config/paypal.json   — live PayPal Client ID + $3/month Plan ID (public values)
- *   config/admins.json   — owner + co-owner emails (free access, admin panel)
+ *   config/admins.json   — owner + co-owner + admin emails (free access, admin panel)
  *   config/email.json    — SMTP settings (copy from email.json.example).
  *                          If missing, verification codes are printed to the
  *                          server console instead of emailed (DEV MODE ONLY).
@@ -53,6 +53,7 @@ const emailCfg = readJson('config/email.json', null) || (process.env.SMTP_HOST ?
 } : null);
 const OWNER_EMAIL = (adminsCfg.ownerEmail || 'pgevil22@gmail.com').toLowerCase();
 const CO_OWNER_EMAILS = new Set((adminsCfg.coOwnerEmails || ['amber_fenton@yahoo.com']).map(e => e.toLowerCase()));
+const ADMIN_EMAILS = new Set((adminsCfg.adminEmails || []).map(e => e.toLowerCase()));
 const PRICE_USD = Number(paypalCfg.priceUsd || 3);
 const PLAN_ID = paypalCfg.planId || '';
 const CLIENT_ID = paypalCfg.clientId || '';
@@ -228,11 +229,12 @@ function publicUser(u) {
   const email = u.email.toLowerCase();
   const isOwner = email === OWNER_EMAIL;
   const isCoOwner = CO_OWNER_EMAILS.has(email);
+  const isAdminEmail = ADMIN_EMAILS.has(email);
   return {
     id: u.id, username: u.username, email: u.email, verified: !!u.verified,
     warnCount: u.warn_count, banned: !!u.banned, createdAt: u.created_at,
-    isOwner, isCoOwner, isAdmin: isOwner || isCoOwner,
-    badge: isOwner ? 'OWNER' : (isCoOwner ? 'CO-OWNER' : null),
+    isOwner, isCoOwner, isAdminEmail, isAdmin: isOwner || isCoOwner || isAdminEmail,
+    badge: isOwner ? 'OWNER' : (isCoOwner ? 'CO-OWNER' : (isAdminEmail ? 'ADMIN' : null)),
   };
 }
 function activeSubscription(userId) {
@@ -245,7 +247,7 @@ function activeSubscription(userId) {
 function hasAccess(u) {
   if (!u || !u.verified || u.banned) return false;
   const email = u.email.toLowerCase();
-  if (email === OWNER_EMAIL || CO_OWNER_EMAILS.has(email)) return true;
+  if (email === OWNER_EMAIL || CO_OWNER_EMAILS.has(email) || ADMIN_EMAILS.has(email)) return true;
   return !!activeSubscription(u.id);
 }
 function requireAuth(req, res, next) {
@@ -268,7 +270,7 @@ function requireAccess(req, res, next) {
 function requireAdmin(req, res, next) {
   if (!req.user) return res.status(401).json({ error: 'Please log in.' });
   const email = req.user.email.toLowerCase();
-  if (email !== OWNER_EMAIL && !CO_OWNER_EMAILS.has(email)) {
+  if (email !== OWNER_EMAIL && !CO_OWNER_EMAILS.has(email) && !ADMIN_EMAILS.has(email)) {
     return res.status(403).json({ error: 'Admin only.' });
   }
   next();
@@ -281,6 +283,9 @@ function adminActionBlocked(actor, target) {
   if (targetEmail === OWNER_EMAIL) return 'The owner cannot be warned or banned.';
   if (CO_OWNER_EMAILS.has(targetEmail) && actorEmail !== OWNER_EMAIL) {
     return 'A co-owner cannot warn or ban another co-owner.';
+  }
+  if (ADMIN_EMAILS.has(targetEmail) && actorEmail !== OWNER_EMAIL && !CO_OWNER_EMAILS.has(actorEmail)) {
+    return 'Only the owner or a co-owner can warn or ban an admin.';
   }
   return null;
 }
@@ -619,7 +624,7 @@ app.post('/api/trades/:id/close', requireAuth, (req, res) => {
   const t = db.prepare('SELECT * FROM trade_posts WHERE id = ?').get(req.params.id);
   if (!t) return res.status(404).json({ error: 'Trade not found.' });
   const email = req.user.email.toLowerCase();
-  const isAdmin = email === OWNER_EMAIL || CO_OWNER_EMAILS.has(email);
+  const isAdmin = email === OWNER_EMAIL || CO_OWNER_EMAILS.has(email) || ADMIN_EMAILS.has(email);
   if (t.user_id !== req.user.id && !isAdmin) return res.status(403).json({ error: 'Not yours.' });
   db.prepare("UPDATE trade_posts SET status = 'closed' WHERE id = ?").run(req.params.id);
   res.json({ ok: true });
@@ -653,7 +658,7 @@ app.post('/api/sales/:id/close', requireAuth, (req, res) => {
   const s = db.prepare('SELECT * FROM sale_listings WHERE id = ?').get(req.params.id);
   if (!s) return res.status(404).json({ error: 'Listing not found.' });
   const email = req.user.email.toLowerCase();
-  const isAdmin = email === OWNER_EMAIL || CO_OWNER_EMAILS.has(email);
+  const isAdmin = email === OWNER_EMAIL || CO_OWNER_EMAILS.has(email) || ADMIN_EMAILS.has(email);
   if (s.user_id !== req.user.id && !isAdmin) return res.status(403).json({ error: 'Not yours.' });
   db.prepare("UPDATE sale_listings SET status = 'sold' WHERE id = ?").run(req.params.id);
   res.json({ ok: true });
@@ -935,8 +940,8 @@ app.post('/api/admin/subscription/grant', requireAdmin, (req, res) => {
   const t = db.prepare('SELECT * FROM users WHERE id = ?').get(userId);
   if (!t) return res.status(404).json({ error: 'Member not found.' });
   const email = t.email.toLowerCase();
-  if (email === OWNER_EMAIL || CO_OWNER_EMAILS.has(email)) {
-    return res.status(400).json({ error: 'Owners already have free access.' });
+  if (email === OWNER_EMAIL || CO_OWNER_EMAILS.has(email) || ADMIN_EMAILS.has(email)) {
+    return res.status(400).json({ error: 'This account already has free access.' });
   }
   const d = Math.max(1, Math.min(365, Number(days) || 30));
   const ends = new Date(Date.now() + d * 24 * 3600 * 1000);
@@ -950,8 +955,8 @@ app.post('/api/admin/subscription/revoke', requireAdmin, (req, res) => {
   const t = db.prepare('SELECT * FROM users WHERE id = ?').get(userId);
   if (!t) return res.status(404).json({ error: 'Member not found.' });
   const email = t.email.toLowerCase();
-  if (email === OWNER_EMAIL || CO_OWNER_EMAILS.has(email)) {
-    return res.status(400).json({ error: 'Owners cannot have access revoked.' });
+  if (email === OWNER_EMAIL || CO_OWNER_EMAILS.has(email) || ADMIN_EMAILS.has(email)) {
+    return res.status(400).json({ error: 'This account cannot have access revoked.' });
   }
   db.prepare(`UPDATE subscriptions SET status = 'cancelled', cancelled_at = ? WHERE user_id = ? AND status = 'active'`).run(nowIso(), t.id);
   res.json({ ok: true });
