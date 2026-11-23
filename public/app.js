@@ -62,7 +62,7 @@ function finePrintHtml() {
     + 'We are not a party to any trade, sale or private deal, we do not hold money or brainrots, '
     + 'and we are not liable for anything that happens between members — including scams, '
     + 'lost items or lost money. Trade at your own risk: check prices, use a middleman you trust, '
-    + 'and never send money first to a stranger.</footer>';
+    + 'and never send money first to a stranger. <a href="/privacy">Privacy policy</a></footer>';
 }
 
 // ---------- API ----------
@@ -185,6 +185,13 @@ async function route() {
 
 function paywallView(note) {
   const price = state.cfg ? state.cfg.priceUsd : 3;
+  if (loggedIn() && state.me && !state.me.verified) {
+    view.innerHTML =
+      '<div class="card paywall"><h1>Waiting for approval</h1>' +
+      '<p>Your account is waiting for the owner to approve it. Check back soon — once approved, subscribe $' + price + '/month for full access.</p>' +
+      '<p class="muted">Signed in as ' + esc(state.me.username) + ' (' + esc(state.me.email) + ').</p></div>' + finePrintHtml();
+    return;
+  }
   view.innerHTML =
     '<div class="card paywall"><h1>Members only</h1>' +
     '<p>' + esc(note || 'The full site is for subscribers.') + '</p>' +
@@ -248,13 +255,18 @@ function authCard(title, inner) {
   return '<div class="card"><h1>' + esc(title) + '</h1>' + inner + '</div>' + finePrintHtml();
 }
 ROUTES.signup = async function () {
+  const googleBtn = (state.cfg && state.cfg.googleAuthEnabled)
+    ? '<p><a class="btn block" href="/api/auth/google">Continue with Google</a></p>'
+      + '<p class="form-note">Google verifies your email instantly — no code, no waiting. No Google account? Sign up below instead.</p>'
+    : '';
   view.innerHTML = authCard('Sign up',
+    googleBtn +
     '<form id="signupForm">' +
     '<label for="suUser">Username</label><input id="suUser" required minlength="3" maxlength="24" autocomplete="username" placeholder="Your display name">' +
     '<label for="suEmail">Email</label><input id="suEmail" type="email" required autocomplete="email" placeholder="you@example.com">' +
     '<label for="suPass">Password</label><input id="suPass" type="password" required minlength="6" autocomplete="new-password" placeholder="At least 6 characters">' +
     '<p style="margin-top:12px"><button class="btn block" type="submit">Create account</button></p>' +
-    '<p class="form-note">We email you a 6-digit code to verify your email. Then subscribe $' + (state.cfg ? state.cfg.priceUsd : 3) + '/month for full access.</p>' +
+    '<p class="form-note">No Google account? Your account waits for the owner to approve it, then subscribe $' + (state.cfg ? state.cfg.priceUsd : 3) + '/month for full access.</p>' +
     '<p class="form-note">Already have an account? <a href="#/login">Log in</a></p>' +
     '<div id="formMsg"></div></form>');
   $('#signupForm').addEventListener('submit', async e => {
@@ -264,15 +276,21 @@ ROUTES.signup = async function () {
       const r = await post('/api/auth/register', {
         username: $('#suUser').value.trim(), email: $('#suEmail').value.trim(), password: $('#suPass').value,
       });
-      sessionStorage.setItem('bt_verify_email', $('#suEmail').value.trim().toLowerCase());
-      toast(r.message || 'Code sent.');
-      go('verify');
+      if (r.user) { await loadMe(); toast(r.message || 'Account created.'); go('home'); return; }
+      msg.innerHTML = '<div class="success">' + esc(r.message || 'Account created. The owner will approve it.') + '</div>';
+      toast(r.message || 'Account created.');
     } catch (err) { msg.innerHTML = '<div class="error">' + esc(err.message) + '</div>'; }
   });
 };
 ROUTES.login = async function (note) {
+  const params = new URLSearchParams(location.hash.split('?')[1] || '');
+  const googleFailed = params.get('google') === 'failed';
+  const googleBtn = (state.cfg && state.cfg.googleAuthEnabled)
+    ? '<p><a class="btn block" href="/api/auth/google">Continue with Google</a></p>' : '';
   view.innerHTML = authCard('Log in',
+    (googleFailed ? '<div class="error">Google sign-in did not work. Try again, or log in with your email instead.</div>' : '') +
     (typeof note === 'string' && note ? '<div class="error">' + esc(note) + '</div>' : '') +
+    googleBtn +
     '<form id="loginForm">' +
     '<label for="liEmail">Email</label><input id="liEmail" type="email" required autocomplete="email">' +
     '<label for="liPass">Password</label><input id="liPass" type="password" required autocomplete="current-password">' +
@@ -325,6 +343,7 @@ ROUTES.verify = async function () {
 // ---------- subscribe ($3/month via PayPal) ----------
 ROUTES.subscribe = async function () {
   if (!loggedIn()) { loginView('Log in or sign up first, then subscribe.'); return; }
+  if (!state.me.verified) { paywallView(); return; }
   const price = state.cfg ? state.cfg.priceUsd : 3;
   if (hasAccess()) {
     const sub = state.me.subscription;
@@ -687,27 +706,102 @@ ROUTES.sales = async function () {
     '<label for="sDesc">Description</label><textarea id="sDesc" maxlength="500" placeholder="Traits, mutation, level…"></textarea>' +
     '<label for="sImg">Your own picture URL (optional — leave blank to use the game picture)</label><input id="sImg" type="url" placeholder="https://…">' +
     '<p style="margin-top:12px"><button class="btn block" type="submit">List for sale</button></p><div id="formMsg"></div></form></div>' +
+    '<div class="card"><div class="toolbar"><input id="saleQ" type="search" placeholder="Search for sale — brainrot, seller, traits…" aria-label="Search listings"></div></div>' +
     '<div id="saleList"></div>' + finePrintHtml();
+  let allSales = [];
+  const likeLabel = (liked, count) => (liked ? 'Liked' : 'Like') + ' (' + (count || 0) + ')';
+  const cardHtml = s =>
+    '<div class="card brainrot-card">' +
+    (s.image ? '<img src="' + esc(s.image) + '" alt="' + esc(s.brainrotName) + '">' : '<span class="no-pic">NO PICTURE YET</span>') +
+    '<div class="info"><h3>' + esc(s.brainrotName) + '</h3>' +
+    '<div class="price">' + money(s.price_usd) + '</div>' +
+    (s.gamePicture ? '<div class="range">Game picture — seller uploaded no photo</div>' : '') +
+    '<p class="muted small">' + userLink({ id: s.user_id, username: s.username, badge: null }) + ' · ' + timeAgo(s.created_at) +
+    (s.status === 'open' ? '' : ' · <span class="badge">SOLD</span>') + '</p>' +
+    (s.description ? '<p>' + esc(s.description) + '</p>' : '') +
+    '<div class="row">' +
+    '<button class="btn ghost' + (s.likedByMe ? ' liked' : '') + '" data-like="' + s.id + '">' + likeLabel(s.likedByMe, s.likeCount) + '</button>' +
+    '<button class="btn ghost" data-comments="' + s.id + '">Comments (' + (s.commentCount || 0) + ')</button>' +
+    (s.status === 'open' && s.user_id !== state.me.id ? '<button class="btn" data-contact-seller="' + s.user_id + '" data-seller-name="' + esc(s.username) + '">Message seller</button>' : '') +
+    (s.user_id === state.me.id && s.status === 'open' ? '<button class="btn secondary" data-close-sale="' + s.id + '">Mark sold</button>' : '') +
+    '<button class="btn ghost" data-report-sale="' + s.id + '">Report</button>' +
+    (isAdmin() ? '<button class="btn danger" data-del-sale="' + s.id + '">Delete</button>' : '') +
+    '</div>' +
+    '<div class="comments" id="comments-' + s.id + '" style="display:none"></div>' +
+    '</div></div>';
+  const loadComments = async listingId => {
+    const box = $('#comments-' + listingId);
+    if (!box) return;
+    try {
+      const r = await get('/api/sales/' + listingId + '/comments');
+      box.innerHTML = '<div class="comments-list">' + (r.comments.length ? r.comments.map(c =>
+        '<div class="comment"><strong>' + esc(c.username) + '</strong> <span class="muted small">' + timeAgo(c.created_at) + '</span>' +
+        '<p>' + esc(c.text) + '</p>' +
+        '<div class="row">' +
+        (c.user_id === state.me.id || isAdmin() ? '<button class="btn ghost" data-del-comment="' + c.id + '" data-listing="' + listingId + '">Delete</button>' : '') +
+        (c.user_id !== state.me.id ? '<button class="btn ghost" data-report-comment="' + c.id + '">Report</button>' : '') +
+        '</div></div>').join('') : '<p class="muted small">No comments yet — be the first.</p>') + '</div>' +
+        '<form data-comment-form="' + listingId + '"><div class="row"><input type="text" maxlength="500" placeholder="Ask about this brainrot…" aria-label="Write a comment" required><button class="btn" type="submit">Comment</button></div></form>';
+      const form = box.querySelector('[data-comment-form]');
+      form.addEventListener('submit', async e => {
+        e.preventDefault();
+        const input = form.querySelector('input');
+        try {
+          await post('/api/sales/' + listingId + '/comments', { text: input.value });
+          await loadComments(listingId);
+          const s = allSales.find(x => x.id === listingId);
+          if (s) { s.commentCount = (s.commentCount || 0) + 1; updateCommentsBtn(listingId, s.commentCount); }
+        } catch (err) { toast(err.message); }
+      });
+      box.querySelectorAll('[data-del-comment]').forEach(b => b.addEventListener('click', async () => {
+        if (!confirm('Delete this comment?')) return;
+        try {
+          await del('/api/sales/comments/' + b.dataset.delComment);
+          await loadComments(listingId);
+          const s = allSales.find(x => x.id === listingId);
+          if (s) { s.commentCount = Math.max(0, (s.commentCount || 1) - 1); updateCommentsBtn(listingId, s.commentCount); }
+        } catch (err) { toast(err.message); }
+      }));
+      box.querySelectorAll('[data-report-comment]').forEach(b => b.addEventListener('click', () => reportPrompt('sale_comment', b.dataset.reportComment)));
+    } catch (err) { box.innerHTML = '<div class="error">' + esc(err.message) + '</div>'; }
+  };
+  const updateCommentsBtn = (listingId, count) => {
+    const b = document.querySelector('[data-comments="' + listingId + '"]');
+    if (b) b.textContent = 'Comments (' + count + ')';
+  };
+  const attachCardHandlers = () => {
+    document.querySelectorAll('#saleList [data-like]').forEach(b => b.addEventListener('click', async () => {
+      try {
+        const r = await post('/api/sales/' + b.dataset.like + '/like');
+        b.innerHTML = likeLabel(r.liked, r.likeCount);
+        b.classList.toggle('liked', r.liked);
+        const s = allSales.find(x => x.id === Number(b.dataset.like));
+        if (s) { s.likeCount = r.likeCount; s.likedByMe = r.liked; }
+      } catch (err) { toast(err.message); }
+    }));
+    document.querySelectorAll('#saleList [data-comments]').forEach(b => b.addEventListener('click', async () => {
+      const box = $('#comments-' + b.dataset.comments);
+      if (!box) return;
+      if (box.style.display === 'none') { box.style.display = ''; await loadComments(Number(b.dataset.comments)); }
+      else box.style.display = 'none';
+    }));
+  };
+  const renderSales = q => {
+    const list = allSales.filter(s => !q ||
+      s.brainrotName.toLowerCase().includes(q) ||
+      (s.username || '').toLowerCase().includes(q) ||
+      (s.description || '').toLowerCase().includes(q));
+    $('#saleList').innerHTML = list.length ? list.map(cardHtml).join('')
+      : '<div class="card"><p class="muted">' + (allSales.length ? 'No listings match that search.' : 'Nothing for sale right now.') + '</p></div>';
+    attachCardHandlers();
+  };
   const load = async () => {
     const r = await get('/api/sales');
-    $('#saleList').innerHTML = r.sales.length ? r.sales.map(s =>
-      '<div class="card brainrot-card">' +
-      (s.image ? '<img src="' + esc(s.image) + '" alt="' + esc(s.brainrotName) + '">' : '<span class="no-pic">NO PICTURE YET</span>') +
-      '<div class="info"><h3>' + esc(s.brainrotName) + '</h3>' +
-      '<div class="price">' + money(s.price_usd) + '</div>' +
-      (s.gamePicture ? '<div class="range">Game picture — seller uploaded no photo</div>' : '') +
-      '<p class="muted small">' + userLink({ id: s.user_id, username: s.username, badge: null }) + ' · ' + timeAgo(s.created_at) +
-      (s.status === 'open' ? '' : ' · <span class="badge">SOLD</span>') + '</p>' +
-      (s.description ? '<p>' + esc(s.description) + '</p>' : '') +
-      '<div class="row">' +
-      (s.status === 'open' && s.user_id !== state.me.id ? '<button class="btn" data-contact-seller="' + s.user_id + '" data-seller-name="' + esc(s.username) + '">Message seller</button>' : '') +
-      (s.user_id === state.me.id && s.status === 'open' ? '<button class="btn secondary" data-close-sale="' + s.id + '">Mark sold</button>' : '') +
-      '<button class="btn ghost" data-report-sale="' + s.id + '">Report</button>' +
-      (isAdmin() ? '<button class="btn danger" data-del-sale="' + s.id + '">Delete</button>' : '') +
-      '</div></div></div>').join('')
-      : '<div class="card"><p class="muted">Nothing for sale right now.</p></div>';
+    allSales = r.sales;
+    renderSales(($('#saleQ') && $('#saleQ').value.trim().toLowerCase()) || '');
   };
   await load();
+  $('#saleQ').addEventListener('input', e => renderSales(e.target.value.trim().toLowerCase()));
   $('#saleForm').addEventListener('submit', async e => {
     e.preventDefault();
     const msg = $('#formMsg');
@@ -952,8 +1046,10 @@ ROUTES.admin = async function () {
     '<div class="card"><strong>Active subscriptions</strong><div class="price">' + stats.activeSubscriptions + '</div></div>' +
     '<div class="card"><strong>Chat messages</strong><div class="price">' + stats.chatMessages + '</div></div>' +
     '<div class="card"><strong>Open reports</strong><div class="price">' + stats.openReports + '</div></div>' +
+    '<div class="card"><strong>Waiting for approval</strong><div class="price">' + (stats.pendingApprovals || 0) + '</div></div>' +
     '</div>' +
     '<p class="muted small">PayPal Secret configured: ' + (stats.paypalSecretConfigured ? 'yes — subscriptions are verified with PayPal' : 'no — subscriptions are recorded from checkout only; add PAYPAL_CLIENT_SECRET to verify them server-side') + '.</p></div>' +
+    '<div class="card"><h2>Waiting for approval</h2><div id="pendingList">Loading…</div></div>' +
     '<div class="card"><h2>Reports</h2><div id="reportList">Loading…</div></div>' +
     '<div class="card"><h2>Members</h2><div id="memberAdminList">Loading…</div></div>' +
     '<div class="card"><h2>Edit a brainrot price</h2>' +
@@ -975,6 +1071,15 @@ ROUTES.admin = async function () {
     '<label for="rTier">Tier</label><select id="rTier"><option>Eternal</option><option>Absolute</option><option>GOAT</option></select>' +
     '<p style="margin-top:12px"><button class="btn" type="submit">Save rarity</button></p><div id="rarMsg"></div></form></div>' +
     finePrintHtml();
+  const loadPending = async () => {
+    const r = await get('/api/admin/pending');
+    $('#pendingList').innerHTML = r.pending.length ? r.pending.map(p =>
+      '<div class="card"><div class="spread"><div><strong>' + esc(p.username) + '</strong>' +
+      '<div class="muted small">' + esc(p.email) + ' · signed up ' + timeAgo(p.created_at) + '</div></div>' +
+      '<div class="row"><button class="btn" data-approve="' + p.id + '">Approve</button>' +
+      '<button class="btn danger" data-reject="' + p.id + '">Reject</button></div></div></div>').join('')
+      : '<p class="muted">No accounts waiting.</p>';
+  };
   const loadReports = async () => {
     const r = await get('/api/admin/reports');
     $('#reportList').innerHTML = r.reports.length ? r.reports.map(rep =>
@@ -1000,9 +1105,14 @@ ROUTES.admin = async function () {
       '<button class="btn ghost" data-revoke="' + m.id + '">Remove access</button>' +
       '</div></div></div>').join('');
   };
+  await loadPending();
   await loadReports();
   await loadMembers();
   view.addEventListener('click', async e => {
+    const ap = e.target.closest('[data-approve]');
+    if (ap) { try { await post('/api/admin/approve', { userId: Number(ap.dataset.approve) }); toast('Approved.'); await loadPending(); await loadMembers(); } catch (err) { toast(err.message); } return; }
+    const rj = e.target.closest('[data-reject]');
+    if (rj) { if (!confirm('Reject this account? It will be deleted.')) return; try { await post('/api/admin/reject', { userId: Number(rj.dataset.reject) }); toast('Rejected.'); await loadPending(); await loadMembers(); } catch (err) { toast(err.message); } return; }
     const res = e.target.closest('[data-resolve-report]');
     if (res) { await post('/api/admin/reports/' + res.dataset.resolveReport + '/resolve'); await loadReports(); return; }
     const vdm = e.target.closest('[data-view-dm]');
