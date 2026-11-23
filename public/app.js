@@ -128,6 +128,8 @@ const NAV = [
   { route: 'home', label: 'Home', ico: '🏠' },
   { route: 'prices', label: 'Prices', ico: '💲' },
   { route: 'checker', label: 'Checker', ico: '⚖️' },
+  { route: 'sales', label: 'For Sale', ico: '🛒' },
+  { route: 'trades', label: 'Trades', ico: '🔄' },
   { route: 'chat', label: 'Chat', ico: '💬' },
   { route: 'messages', label: 'Messages', ico: '✉️' },
   { route: 'account', label: 'Account', ico: '👤' },
@@ -219,8 +221,8 @@ ROUTES.home = async function () {
     ['Trade checker', 'Check any brainrot by mutation and traits, and compare two brainrots to see if a trade is worth it.'],
     ['Rarity chart', 'Every Eternal ranked least rarest to rarest, plus Absolute and GOAT rarities.'],
     ['Live chat', 'Talk with other players and organise trades in real time.'],
-    ['Trade board', 'Post what you have and what you want — other members come to you.'],
-    ['For Sale', 'List brainrots for real money with your own price and picture.'],
+    ['Trade board', 'Post what you have and what you want — other members come to you.', 'trades'],
+    ['For Sale', 'List brainrots for real money with your own price and picture.', 'sales'],
     ['Verified members', 'Every member verifies their email. Owners, co-owners and admins are badged.'],
     ['Owner moderation & safety', 'Scam checklist before every deal, report and block buttons, and the owner reviews reports.'],
   ];
@@ -231,11 +233,11 @@ ROUTES.home = async function () {
     '<p class="price-tag">$' + price + '/month</p>' +
     '<p class="muted">Everything in the app, one price. Cancel anytime.</p>' +
     (hasAccess()
-      ? '<p><a class="btn" href="#/prices">Open the price list</a></p>'
+      ? '<p><a class="btn" href="#/prices">Open the price list</a> <a class="btn secondary" href="#/sales">Sell a brainrot</a></p>'
       : '<p><a class="btn" href="#/signup">Sign up</a> <a class="btn secondary" href="#/login">Log in</a></p>') +
     '</section>' +
     '<div class="card"><h2>What you get</h2><ul class="feature-list">' +
-    feats.map(f => '<li><strong>' + esc(f[0]) + '</strong><br><span class="muted">' + esc(f[1]) + '</span></li>').join('') +
+    feats.map(f => '<li><strong>' + (f[2] ? '<a href="#/' + f[2] + '">' + esc(f[0]) + '</a>' : esc(f[0])) + '</strong><br><span class="muted">' + esc(f[1]) + '</span></li>').join('') +
     '</ul></div>' +
     (preview.length ? '<div class="card"><h2>A taste of the price list</h2><div class="grid two">' +
       preview.map(i =>
@@ -248,7 +250,7 @@ ROUTES.home = async function () {
       '</div>' : '') +
     '<div class="card"><h2>How it works</h2><ol class="steps">' +
     '<li><strong>Sign up</strong> — pick a username and email.</li>' +
-    '<li><strong>Verify your email</strong> — we send a 6-digit code.</li>' +
+    '<li><strong>Verify</strong> — sign in with Google and you\'re verified instantly, or sign up with email and the owner approves you.</li>' +
     '<li><strong>Subscribe $' + price + '/month</strong> — PayPal, cancel anytime. Full access right away.</li>' +
     '</ol></div>' +
     '<div class="card"><h2>Stay safe</h2><p class="muted">Check the price before you trade. Use a middleman you trust. Never send money first to a stranger. '
