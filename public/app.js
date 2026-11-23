@@ -133,6 +133,7 @@ const NAV = [
   { route: 'trades', label: 'Trades', ico: '🔄' },
   { route: 'chat', label: 'Chat', ico: '💬' },
   { route: 'messages', label: 'Messages', ico: '✉️' },
+  { route: 'help', label: 'Help', ico: '❓' },
   { route: 'account', label: 'Account', ico: '👤' },
 ];
 function renderNav() {
@@ -224,6 +225,7 @@ ROUTES.home = async function () {
     ['Live chat', 'Talk with other players and organise trades in real time.'],
     ['Trade board', 'Post what you have and what you want — other members come to you.', 'trades'],
     ['For Sale', 'List brainrots for real money with your own price and picture.', 'sales'],
+    ['Help forum', 'Ask for help or answer other players — the owner and admins read every post.', 'help'],
     ['Verified members', 'Every member verifies their email. Owners, co-owners and admins are badged.'],
     ['Owner moderation & safety', 'Scam checklist before every deal, report and block buttons, and the owner reviews reports.'],
   ];
@@ -247,7 +249,7 @@ ROUTES.home = async function () {
         (i.ballpark ? ' <span class="badge ballpark">BALLPARK</span>' : '') +
         '</div></div>').join('') +
       '</div><p class="muted small">Sample only — the full list of 77 brainrots is for members.</p>' +
-      (hasAccess() ? '' : '<p><a class="btn" href="#/signup">See all 88 — subscribe $' + price + '/month</a></p>') +
+      (hasAccess() ? '' : '<p><a class="btn" href="#/signup">See all 77 — subscribe $' + price + '/month</a></p>') +
       '</div>' : '') +
     '<div class="card"><h2>How it works</h2><ol class="steps">' +
     '<li><strong>Sign up</strong> — pick a username and email.</li>' +
@@ -604,6 +606,82 @@ ROUTES.chat = async function () {
   });
 };
 
+// ---------- help forum ----------
+// Players and admins both post here. The owner and admins read every topic.
+ROUTES.help = async function () {
+  const listHtml = topics =>
+    '<div class="card"><h1>Help</h1>' +
+    '<p class="muted">Ask for help, or answer someone else. Players and admins both post here — the owner and admins read every post. Never share your password.</p>' +
+    '<form id="helpForm"><label for="hTitle">Title</label><input id="hTitle" maxlength="120" required placeholder="e.g. Listing my brainrot is not working">' +
+    '<label for="hMsg">What do you need help with?</label><textarea id="hMsg" maxlength="1000" required placeholder="Describe the problem…"></textarea>' +
+    '<p style="margin-top:12px"><button class="btn block" type="submit">Post help request</button></p><div id="helpMsg"></div></form></div>' +
+    (topics.length ? topics.map(t =>
+      '<div class="card" style="cursor:pointer" data-help-topic="' + t.id + '">' +
+      '<h3>' + esc(t.title) + ' ' + (t.status === 'closed' ? '<span class="badge">CLOSED</span>' : '<span class="badge">OPEN</span>') + '</h3>' +
+      '<p class="muted small">' + userLink({ id: t.user_id, username: t.username, badge: t.badge }) + ' · ' + timeAgo(t.created_at) +
+      ' · ' + (t.replyCount || 0) + ' repl' + ((t.replyCount || 0) === 1 ? 'y' : 'ies') + '</p>' +
+      '</div>').join('') : '<div class="card"><p class="muted">No help requests yet — be the first to ask.</p></div>');
+  const loadList = async () => {
+    const r = await get('/api/help');
+    view.innerHTML = listHtml(r.topics) + finePrintHtml();
+    $('#helpForm').addEventListener('submit', async e => {
+      e.preventDefault();
+      const msg = $('#helpMsg');
+      try {
+        await post('/api/help', { title: $('#hTitle').value.trim(), message: $('#hMsg').value.trim() });
+        toast('Help request posted.');
+        await loadList();
+      } catch (err) { msg.innerHTML = '<div class="error">' + esc(err.message) + '</div>'; }
+    });
+    view.querySelectorAll('[data-help-topic]').forEach(el => el.addEventListener('click', () => showTopic(Number(el.dataset.helpTopic))));
+  };
+  const showTopic = async id => {
+    const r = await get('/api/help/' + id);
+    const t = r.topic;
+    const canMod = t.user_id === state.me.id || isAdmin();
+    view.innerHTML =
+      '<div class="card"><p><button class="btn ghost" id="helpBack">← Back to Help</button></p>' +
+      '<h1>' + esc(t.title) + ' ' + (t.status === 'closed' ? '<span class="badge">CLOSED</span>' : '<span class="badge">OPEN</span>') + '</h1>' +
+      '<p class="muted small">' + userLink({ id: t.user_id, username: t.username, badge: t.badge }) + ' · ' + timeAgo(t.created_at) + '</p>' +
+      '<p>' + esc(t.message) + '</p>' +
+      '<div class="row">' +
+      (canMod ? '<button class="btn secondary" id="helpClose">' + (t.status === 'closed' ? 'Reopen' : 'Close') + '</button>' : '') +
+      (isAdmin() ? '<button class="btn danger" id="helpDel">Delete</button>' : '') +
+      '</div></div>' +
+      '<div class="card"><h2>Replies</h2><div class="comments-list">' +
+      (r.replies.length ? r.replies.map(c =>
+        '<div class="comment"><strong>' + userLink({ id: c.user_id, username: c.username, badge: c.badge }) + '</strong> <span class="muted small">' + timeAgo(c.created_at) + '</span>' +
+        '<p>' + esc(c.text) + '</p></div>').join('') : '<p class="muted small">No replies yet.</p>') +
+      '</div>' +
+      (t.status === 'open' || isAdmin() ?
+        '<form id="helpReplyForm" style="margin-top:12px"><div class="row"><input id="helpReplyText" type="text" maxlength="500" placeholder="Write a reply…" aria-label="Write a reply" required><button class="btn" type="submit">Reply</button></div><div id="helpReplyMsg"></div></form>'
+        : '<p class="muted small" style="margin-top:12px">This topic is closed.</p>') +
+      '</div>' + finePrintHtml();
+    $('#helpBack').addEventListener('click', loadList);
+    const closeBtn = $('#helpClose');
+    if (closeBtn) closeBtn.addEventListener('click', async () => {
+      try { await post('/api/help/' + t.id + (t.status === 'closed' ? '/reopen' : '/close'), {}); await showTopic(t.id); }
+      catch (err) { toast(err.message); }
+    });
+    const delBtn = $('#helpDel');
+    if (delBtn) delBtn.addEventListener('click', async () => {
+      if (!confirm('Delete this help topic and all its replies?')) return;
+      try { await del('/api/help/' + t.id); toast('Deleted.'); await loadList(); }
+      catch (err) { toast(err.message); }
+    });
+    const form = $('#helpReplyForm');
+    if (form) form.addEventListener('submit', async e => {
+      e.preventDefault();
+      const msg = $('#helpReplyMsg');
+      try {
+        await post('/api/help/' + t.id + '/reply', { text: $('#helpReplyText').value.trim() });
+        await showTopic(t.id);
+      } catch (err) { msg.innerHTML = '<div class="error">' + esc(err.message) + '</div>'; }
+    });
+  };
+  await loadList();
+};
+
 // ---------- report helper ----------
 function reportPrompt(targetType, targetId) {
   const reason = prompt('What is wrong with this? (The owner reviews all reports.)');
@@ -711,8 +789,9 @@ ROUTES.sales = async function () {
   const mutOpts = meta.mutations.map(m => '<option value="' + esc(m) + '">' + esc(m) + '</option>').join('');
   view.innerHTML =
     '<div class="card"><h1>For Sale</h1>' +
-    '<p class="muted">Brainrots listed by members, for real money. The seller sets their own price. Check the price list before you pay anything. <strong>Eternals only</strong> — no Secrets, no base brainrots. Fortnite Steal the Brainrot only, not the Roblox game.</p>' +
-    '<form id="saleForm"><label for="sItem">Brainrot</label><select id="sItem">' + opts + '</select>' +
+    '<p class="muted">Brainrots listed by members, for real money. The seller sets their own price. Check the price list before you pay anything. <strong>Eternals only</strong> — no Secrets, no base brainrots. Fortnite Steal the Brainrot only, not the Roblox game. If your brainrot is not in the list, pick Other and type its name.</p>' +
+    '<form id="saleForm"><label for="sItem">Brainrot</label><select id="sItem">' + opts + '<option value="other">Other — not in the list</option></select>' +
+    '<label for="sOtherName" id="sOtherNameLabel" style="display:none">Brainrot name</label><input id="sOtherName" maxlength="60" placeholder="Type the brainrot name" style="display:none">' +
     '<label for="sMut">Mutation</label><select id="sMut">' + mutOpts + '</select>' +
     '<label for="sPrice">Your price (USD)</label><input id="sPrice" type="number" min="1" max="100000" step="0.01" required placeholder="e.g. 30">' +
     '<label for="sDesc">Description</label><textarea id="sDesc" maxlength="500" placeholder="Traits, level…"></textarea>' +
@@ -730,6 +809,7 @@ ROUTES.sales = async function () {
     '<div class="info"><h3>' + esc(s.brainrotName) + '</h3>' +
     '<div class="price">' + money(s.price_usd) + '</div>' +
     (s.mutation && s.mutation !== 'Default' ? '<div class="range">Mutation: ' + esc(s.mutation) + '</div>' : '') +
+    (s.brainrot_id === 'other' ? '<div class="range">Other brainrot — not in our price list</div>' : '') +
     (s.gamePicture ? '<div class="range">Game picture — seller uploaded no photo</div>' : '') +
     '<p class="muted small">' + userLink({ id: s.user_id, username: s.username, badge: null }) + ' · ' + timeAgo(s.created_at) +
     (s.status === 'open' ? '' : ' · <span class="badge">SOLD</span>') + '</p>' +
@@ -818,6 +898,9 @@ ROUTES.sales = async function () {
   };
   await load();
   $('#saleQ').addEventListener('input', e => renderSales(e.target.value.trim().toLowerCase()));
+  // "Other" brainrot: show the name box only when Other is picked.
+  const toggleOther = () => { const other = $('#sItem').value === 'other'; $('#sOtherName').style.display = other ? '' : 'none'; $('#sOtherNameLabel').style.display = other ? '' : 'none'; };
+  $('#sItem').addEventListener('change', toggleOther);
   // Shrink a picked picture in the browser (max 800px, JPEG) so the upload stays small.
   const shrinkImage = file => new Promise((resolve, reject) => {
     const img = new Image();
@@ -856,8 +939,10 @@ ROUTES.sales = async function () {
         const up = await post('/api/sales/upload-image', { data });
         imageUrl = up.url;
       }
-      await post('/api/sales', { brainrotId: $('#sItem').value, priceUsd: Number($('#sPrice').value), description: $('#sDesc').value.trim(), imageUrl, mutation: $('#sMut').value });
+      await post('/api/sales', { brainrotId: $('#sItem').value, customName: $('#sItem').value === 'other' ? $('#sOtherName').value.trim() : undefined, priceUsd: Number($('#sPrice').value), description: $('#sDesc').value.trim(), imageUrl, mutation: $('#sMut').value });
       $('#saleForm').reset();
+      $('#sOtherName').style.display = 'none';
+      $('#sOtherNameLabel').style.display = 'none';
       $('#imgPreview').innerHTML = '';
       toast('Listed for sale.');
       await load();
