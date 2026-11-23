@@ -2259,18 +2259,6 @@
    "rarityPct": null
   },
   {
-   "id": "trippi-troppi-troppa-trippa",
-   "name": "Trippi Troppi Troppa Trippa",
-   "typicalLow": 5.0,
-   "typicalHigh": 15.0,
-   "rangeLow": 5.0,
-   "rangeHigh": 20.0,
-   "ballpark": true,
-   "variants": {},
-   "image": "trippi-troppi-troppa-trippa.webp",
-   "rarityPct": null
-  },
-  {
    "id": "il-costruttore-di-pomodori",
    "name": "Il Costruttore Di Pomodori",
    "typicalLow": 10.0,
