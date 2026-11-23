@@ -281,6 +281,17 @@ try { db.exec('ALTER TABLE sale_listings ADD COLUMN mutation TEXT'); } catch (e)
 try { db.exec('ALTER TABLE sale_listings ADD COLUMN custom_name TEXT'); } catch (e) { /* column already exists */ }
 try { db.exec('ALTER TABLE subscriptions ADD COLUMN plan_id TEXT'); } catch (e) { /* column already exists */ }
 try { db.exec('ALTER TABLE subscriptions ADD COLUMN last_synced_at TEXT'); } catch (e) { /* column already exists */ }
+// Referrals + giveaway raffle (added Nov 23, 2026): who invited each member,
+// and a record of raffle draws. referred_by is the inviter's user id (NULL = no referrer).
+try { db.exec('ALTER TABLE users ADD COLUMN referred_by INTEGER'); } catch (e) { /* column already exists */ }
+db.exec('CREATE INDEX IF NOT EXISTS idx_users_referred_by ON users(referred_by)');
+db.exec(`CREATE TABLE IF NOT EXISTS raffle_draws (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  winner_id INTEGER NOT NULL,
+  winner_username TEXT NOT NULL,
+  drawn_at TEXT NOT NULL,
+  drawn_by TEXT NOT NULL
+)`);
 
 // ---------- mail ----------
 // SendGrid (HTTPS) is preferred when configured — Render blocks outbound
@@ -341,6 +352,42 @@ function publicUser(u) {
     isOwner, isCoOwner, isAdminEmail, isAdmin: isOwner || isCoOwner || isAdminEmail,
     badge: isOwner ? 'OWNER' : (isCoOwner ? 'CO-OWNER' : (isAdminEmail ? 'ADMIN' : null)),
   };
+}
+
+// ---------- referrals & giveaway ----------
+// Invite 5 friends, get in the raffle. A referral counts only once the
+// invited friend's account is verified (email sign-ups wait for approval;
+// Google sign-ins verify instantly). One account per email is already
+// enforced, and a member can never be their own referrer — the referrer
+// must already exist when the friend signs up.
+const RAFFLE_NEEDED = 5;
+function findReferrer(ref) {
+  const name = String(ref || '').trim();
+  if (!name || name.length > 24) return null;
+  return db.prepare('SELECT * FROM users WHERE LOWER(username) = LOWER(?)').get(name) || null;
+}
+function referralStats(userId) {
+  const rows = db.prepare('SELECT id, username, created_at FROM users WHERE referred_by = ? AND verified = 1 ORDER BY created_at ASC').all(userId);
+  return { count: rows.length, entered: rows.length >= RAFFLE_NEEDED, referrals: rows };
+}
+function giveawayBoard() {
+  const users = db.prepare('SELECT * FROM users WHERE verified = 1 AND banned = 0').all();
+  const entered = [];
+  for (const u of users) {
+    const s = referralStats(u.id);
+    if (s.entered) entered.push({ id: u.id, username: u.username, badge: publicUser(u).badge, count: s.count });
+  }
+  entered.sort((a, b) => b.count - a.count || a.username.localeCompare(b.username));
+  const draws = db.prepare('SELECT winner_username, drawn_at, drawn_by FROM raffle_draws ORDER BY id DESC LIMIT 10').all();
+  return { needed: RAFFLE_NEEDED, entered, totalEntered: entered.length, draws };
+}
+function adminReferralRows() {
+  const users = db.prepare('SELECT * FROM users ORDER BY username ASC').all();
+  return users.map(u => {
+    const s = referralStats(u.id);
+    const refBy = u.referred_by ? db.prepare('SELECT username FROM users WHERE id = ?').get(u.referred_by) : null;
+    return { id: u.id, username: u.username, badge: publicUser(u).badge, email: u.email, verified: !!u.verified, referredBy: refBy ? refBy.username : null, referralCount: s.count, entered: s.entered };
+  });
 }
 function activeSubscription(userId) {
   const row = db.prepare(
@@ -600,10 +647,37 @@ app.get('/api/me', async (req, res) => {
   res.json({ user: { ...u, hasAccess: hasAccess(req.user), subscription: sub ? { status: sub.status, endsAt: sub.ends_at, paypalSubscriptionId: sub.paypal_subscription_id, planId: sub.plan_id || null, isTrial: !!TRIAL_PLAN_ID && sub.plan_id === TRIAL_PLAN_ID } : null } });
 });
 
+// ---------- referrals & giveaway (API) ----------
+// Your invite link: share it, and every friend who signs up through it
+// and gets verified counts toward the raffle (5 invites = entered).
+app.get('/api/referrals', requireAccess, (req, res) => {
+  const { origin } = googleCallbackFor(req);
+  const link = origin + '/?ref=' + encodeURIComponent(req.user.username);
+  const s = referralStats(req.user.id);
+  res.json({ link, code: req.user.username, needed: RAFFLE_NEEDED, count: s.count, entered: s.entered, referrals: s.referrals });
+});
+// The public giveaway board: everyone who has invited 5+ verified friends,
+// so members can see their own name on it. Past winners too.
+app.get('/api/giveaway', requireAccess, (req, res) => {
+  res.json(giveawayBoard());
+});
+app.get('/api/admin/referrals', requireAdmin, (req, res) => {
+  const rows = adminReferralRows();
+  res.json({ rows, enteredCount: rows.filter(r => r.entered).length, needed: RAFFLE_NEEDED });
+});
+app.post('/api/admin/raffle/draw', requireAdmin, (req, res) => {
+  const board = giveawayBoard();
+  if (!board.entered.length) return res.status(400).json({ error: 'Nobody has entered the raffle yet (5 invites needed).' });
+  const pick = board.entered[Math.floor(Math.random() * board.entered.length)];
+  db.prepare('INSERT INTO raffle_draws (winner_id, winner_username, drawn_at, drawn_by) VALUES (?,?,?,?)')
+    .run(pick.id, pick.username, nowIso(), req.user.username);
+  res.json({ ok: true, winner: pick });
+});
+
 // ---------- auth ----------
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 app.post('/api/auth/register', async (req, res) => {
-  const { username, email, password } = req.body || {};
+  const { username, email, password, ref } = req.body || {};
   if (!username || username.length < 3 || username.length > 24 || !/^[A-Za-z0-9_.-]+$/.test(username)) {
     return res.status(400).json({ error: 'Username must be 3-24 characters (letters, numbers, _ . -).' });
   }
@@ -620,8 +694,15 @@ app.post('/api/auth/register', async (req, res) => {
   // No emailed codes: owner/co-owner/admin accounts verify instantly;
   // everyone else waits for the owner to approve them (Admin panel).
   const autoVerified = isStaffEmail(em) ? 1 : 0;
-  const info = db.prepare('INSERT INTO users (username, email, password_hash, password_salt, verified, created_at) VALUES (?,?,?,?,?,?)')
-    .run(username, em, hashPassword(password, salt), salt, autoVerified, nowIso());
+  // Referral: the inviter's username comes from the ?ref= link the friend
+  // opened. It only counts once this account is verified.
+  let referredBy = null;
+  if (ref) {
+    const referrer = findReferrer(ref);
+    if (referrer) referredBy = referrer.id;
+  }
+  const info = db.prepare('INSERT INTO users (username, email, password_hash, password_salt, verified, referred_by, created_at) VALUES (?,?,?,?,?,?,?)')
+    .run(username, em, hashPassword(password, salt), salt, autoVerified, referredBy, nowIso());
   if (autoVerified) {
     const u = db.prepare('SELECT * FROM users WHERE id = ?').get(Number(info.lastInsertRowid));
     setSession(res, u.id);
@@ -697,7 +778,13 @@ app.get('/api/auth/google', (req, res) => {
   db.prepare('DELETE FROM oauth_states WHERE created_at < ?').run(new Date(Date.now() - 30 * 60 * 1000).toISOString());
   db.prepare('INSERT INTO oauth_states (state, created_at) VALUES (?,?)').run(state, nowIso());
   const { redirectUri } = googleCallbackFor(req);
-  res.setHeader('Set-Cookie', `bt_oauth_state=${state}; HttpOnly; Path=/; Max-Age=1800; SameSite=Lax`);
+  // Referral: if the member opened a ?ref= invite link, carry the inviter
+  // through Google in a short-lived cookie — the callback reads it when
+  // creating the account. It is only used for brand-new accounts.
+  const cookies = [`bt_oauth_state=${state}; HttpOnly; Path=/; Max-Age=1800; SameSite=Lax`];
+  const refParam = String(req.query.ref || '').trim();
+  if (refParam) cookies.push(`bt_ref=${encodeURIComponent(refParam)}; Path=/; Max-Age=1800; SameSite=Lax`);
+  res.setHeader('Set-Cookie', cookies);
   res.redirect(googleAuthUrl(state, redirectUri));
 });
 app.get('/api/auth/google/callback', async (req, res) => {
@@ -717,7 +804,10 @@ app.get('/api/auth/google/callback', async (req, res) => {
     if (dbState) db.prepare('DELETE FROM oauth_states WHERE state = ?').run(qState);
     const stateOk = (stateVal && stateVal === qState) || !!dbState;
     if (!stateOk || !req.query.code) return fail('state check failed (cookie ' + (stateVal ? 'present' : 'missing') + ', server record ' + (dbState ? 'found' : 'not found') + ')');
-    res.setHeader('Set-Cookie', 'bt_oauth_state=; HttpOnly; Path=/; Max-Age=0; SameSite=Lax');
+    res.setHeader('Set-Cookie', ['bt_oauth_state=; HttpOnly; Path=/; Max-Age=0; SameSite=Lax', 'bt_ref=; Path=/; Max-Age=0; SameSite=Lax']);
+    // Referral inviter, carried through Google in the bt_ref cookie (if any).
+    const refCookie = (req.headers.cookie || '').split(';').map(s => s.trim()).find(s => s.startsWith('bt_ref='));
+    const refName = refCookie ? decodeURIComponent(refCookie.slice('bt_ref='.length)) : null;
     const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -752,8 +842,14 @@ app.get('/api/auth/google/callback', async (req, res) => {
       let username = base, n = 1;
       while (db.prepare('SELECT 1 FROM users WHERE username = ?').get(username)) username = base + (n++);
       const salt = crypto.randomBytes(16).toString('hex');
-      const info = db.prepare('INSERT INTO users (username, email, password_hash, password_salt, google_id, verified, created_at) VALUES (?,?,?,?,?,?,?)')
-        .run(username, em, hashPassword(crypto.randomBytes(32).toString('hex'), salt), salt, sub, 1, nowIso());
+      // Referral: only for a brand-new account, and only if the inviter exists.
+      let referredBy = null;
+      if (refName) {
+        const referrer = findReferrer(refName);
+        if (referrer) referredBy = referrer.id;
+      }
+      const info = db.prepare('INSERT INTO users (username, email, password_hash, password_salt, google_id, verified, referred_by, created_at) VALUES (?,?,?,?,?,?,?,?)')
+        .run(username, em, hashPassword(crypto.randomBytes(32).toString('hex'), salt), salt, sub, 1, referredBy, nowIso());
       u = db.prepare('SELECT * FROM users WHERE id = ?').get(Number(info.lastInsertRowid));
     }
     setSession(res, u.id);
