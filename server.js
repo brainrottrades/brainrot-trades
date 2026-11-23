@@ -250,6 +250,20 @@ CREATE TABLE IF NOT EXISTS sale_likes (
   created_at TEXT NOT NULL,
   PRIMARY KEY (listing_id, user_id)
 );
+CREATE TABLE IF NOT EXISTS trade_likes (
+  trade_id INTEGER NOT NULL,
+  user_id INTEGER NOT NULL,
+  created_at TEXT NOT NULL,
+  PRIMARY KEY (trade_id, user_id)
+);
+CREATE TABLE IF NOT EXISTS trade_comments (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  trade_id INTEGER NOT NULL,
+  user_id INTEGER NOT NULL,
+  username TEXT NOT NULL,
+  text TEXT NOT NULL,
+  created_at TEXT NOT NULL
+);
 CREATE TABLE IF NOT EXISTS sale_comments (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   listing_id INTEGER NOT NULL,
@@ -965,7 +979,45 @@ app.delete('/api/help/:id', requireAdmin, (req, res) => {
 // ---------- trade board ----------
 app.get('/api/trades', requireAccess, (req, res) => {
   const rows = db.prepare('SELECT * FROM trade_posts ORDER BY id DESC LIMIT 100').all();
-  res.json({ trades: rows });
+  const likeCounts = new Map(db.prepare('SELECT trade_id, COUNT(*) c FROM trade_likes GROUP BY trade_id').all().map(r => [r.trade_id, r.c]));
+  const myLikes = new Set(db.prepare('SELECT trade_id FROM trade_likes WHERE user_id = ?').all(req.user.id).map(r => r.trade_id));
+  const commentCounts = new Map(db.prepare('SELECT trade_id, COUNT(*) c FROM trade_comments GROUP BY trade_id').all().map(r => [r.trade_id, r.c]));
+  res.json({ trades: rows.map(t => ({ ...t, likeCount: likeCounts.get(t.id) || 0, likedByMe: myLikes.has(t.id), commentCount: commentCounts.get(t.id) || 0 })) });
+});
+// ---------- trade likes ----------
+app.post('/api/trades/:id/like', requireAccess, (req, res) => {
+  const t = db.prepare('SELECT * FROM trade_posts WHERE id = ?').get(req.params.id);
+  if (!t) return res.status(404).json({ error: 'Trade not found.' });
+  const existing = db.prepare('SELECT 1 FROM trade_likes WHERE trade_id = ? AND user_id = ?').get(t.id, req.user.id);
+  if (existing) db.prepare('DELETE FROM trade_likes WHERE trade_id = ? AND user_id = ?').run(t.id, req.user.id);
+  else db.prepare('INSERT INTO trade_likes (trade_id, user_id, created_at) VALUES (?,?,?)').run(t.id, req.user.id, nowIso());
+  const count = db.prepare('SELECT COUNT(*) c FROM trade_likes WHERE trade_id = ?').get(t.id).c;
+  res.json({ ok: true, liked: !existing, likeCount: count });
+});
+// ---------- trade comments ----------
+app.get('/api/trades/:id/comments', requireAccess, (req, res) => {
+  const t = db.prepare('SELECT id FROM trade_posts WHERE id = ?').get(req.params.id);
+  if (!t) return res.status(404).json({ error: 'Trade not found.' });
+  const rows = db.prepare('SELECT * FROM trade_comments WHERE trade_id = ? ORDER BY id ASC LIMIT 100').all(t.id);
+  res.json({ comments: rows });
+});
+app.post('/api/trades/:id/comments', requireAccess, (req, res) => {
+  const t = db.prepare('SELECT id FROM trade_posts WHERE id = ?').get(req.params.id);
+  if (!t) return res.status(404).json({ error: 'Trade not found.' });
+  const text = String((req.body || {}).text || '').trim();
+  if (!text) return res.status(400).json({ error: 'Write something first.' });
+  const info = db.prepare('INSERT INTO trade_comments (trade_id, user_id, username, text, created_at) VALUES (?,?,?,?,?)')
+    .run(t.id, req.user.id, req.user.username, text.slice(0, 500), nowIso());
+  res.json({ ok: true, id: Number(info.lastInsertRowid) });
+});
+app.delete('/api/trades/comments/:id', requireAuth, (req, res) => {
+  const c = db.prepare('SELECT * FROM trade_comments WHERE id = ?').get(req.params.id);
+  if (!c) return res.status(404).json({ error: 'Comment not found.' });
+  const email = req.user.email.toLowerCase();
+  const isAdmin = email === OWNER_EMAIL || CO_OWNER_EMAILS.has(email) || ADMIN_EMAILS.has(email);
+  if (c.user_id !== req.user.id && !isAdmin) return res.status(403).json({ error: 'Not yours.' });
+  db.prepare('DELETE FROM trade_comments WHERE id = ?').run(c.id);
+  res.json({ ok: true });
 });
 app.post('/api/trades', requireAccess, (req, res) => {
   const { title, brainrotId, haveText, wantText } = req.body || {};
@@ -986,6 +1038,8 @@ app.post('/api/trades/:id/close', requireAuth, (req, res) => {
 });
 app.delete('/api/trades/:id', requireAdmin, (req, res) => {
   db.prepare('DELETE FROM trade_posts WHERE id = ?').run(req.params.id);
+  db.prepare('DELETE FROM trade_likes WHERE trade_id = ?').run(req.params.id);
+  db.prepare('DELETE FROM trade_comments WHERE trade_id = ?').run(req.params.id);
   res.json({ ok: true });
 });
 
@@ -1115,7 +1169,7 @@ app.delete('/api/sales/comments/:id', requireAuth, (req, res) => {
 });
 app.post('/api/reports', requireAccess, (req, res) => {
   const { targetType, targetId, reason } = req.body || {};
-  if (!['chat', 'trade', 'sale', 'member', 'dm', 'sale_comment'].includes(targetType)) return res.status(400).json({ error: 'Invalid report type.' });
+  if (!['chat', 'trade', 'sale', 'member', 'dm', 'sale_comment', 'trade_comment'].includes(targetType)) return res.status(400).json({ error: 'Invalid report type.' });
   if (!reason || !String(reason).trim()) return res.status(400).json({ error: 'Say what is wrong.' });
   const info = db.prepare('INSERT INTO reports (reporter_id, reporter_username, target_type, target_id, reason, created_at) VALUES (?,?,?,?,?,?)')
     .run(req.user.id, req.user.username, targetType, Number(targetId) || 0, String(reason).trim().slice(0, 500), nowIso());
