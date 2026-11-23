@@ -7,7 +7,7 @@
 'use strict';
 
 const $ = (sel, root) => (root || document).querySelector(sel);
-const view = $('#view');
+let view = $('#view');
 const topActions = $('#topActions');
 const bottomNav = $('#bottomNav');
 const chatFab = $('#chatFab');
@@ -165,6 +165,12 @@ chatFab.addEventListener('click', () => go('chat'));
 $('#brandHome').addEventListener('click', e => { e.preventDefault(); go('home'); });
 
 async function route() {
+  // Fresh view element on every visit: routes attach delegated click handlers
+  // to #view, and replacing it drops the old ones so an action never fires
+  // twice after coming back to a tab (double deletes, double confirms…).
+  const fresh = view.cloneNode(false);
+  view.replaceWith(fresh);
+  view = fresh;
   clearTimers();
   const { route: name, arg } = parseHash();
   state.route = name;
@@ -531,7 +537,7 @@ ROUTES.checker = async function () {
 ROUTES.rarity = async function () {
   const r = await get('/api/rarity');
   const row = x => '<div class="rarity-row"><span class="name">' + esc(x.name) +
-    (x.image ? ' <img src="' + esc(x.image) + '" alt="" style="display:inline-block;width:28px;height:28px;vertical-align:middle;border-radius:6px">' : '') +
+    (x.image ? ' <img src="' + esc(x.image) + '" alt="" loading="lazy" style="display:inline-block;width:28px;height:28px;vertical-align:middle;border-radius:6px">' : '') +
     (x.overridden ? ' <span class="badge">UPDATED</span>' : '') +
     '</span><span class="pct">' + x.pct + '%</span></div>';
   const maxPct = Math.max.apply(null, r.eternal.map(x => x.pct));
@@ -697,14 +703,19 @@ function openChecklistModal(sellerId, sellerName) {
 }
 ROUTES.sales = async function () {
   const items = await ensureItems();
+  const meta = await ensureMeta();
   const opts = items.map(i => '<option value="' + esc(i.id) + '">' + esc(i.name) + '</option>').join('');
+  const mutOpts = meta.mutations.map(m => '<option value="' + esc(m) + '">' + esc(m) + '</option>').join('');
   view.innerHTML =
     '<div class="card"><h1>For Sale</h1>' +
     '<p class="muted">Brainrots listed by members, for real money. The seller sets their own price. Check the price list before you pay anything.</p>' +
     '<form id="saleForm"><label for="sItem">Brainrot</label><select id="sItem">' + opts + '</select>' +
+    '<label for="sMut">Mutation</label><select id="sMut">' + mutOpts + '</select>' +
     '<label for="sPrice">Your price (USD)</label><input id="sPrice" type="number" min="1" max="100000" step="0.01" required placeholder="e.g. 30">' +
-    '<label for="sDesc">Description</label><textarea id="sDesc" maxlength="500" placeholder="Traits, mutation, level…"></textarea>' +
-    '<label for="sImg">Your own picture URL (optional — leave blank to use the game picture)</label><input id="sImg" type="url" placeholder="https://…">' +
+    '<label for="sDesc">Description</label><textarea id="sDesc" maxlength="500" placeholder="Traits, level…"></textarea>' +
+    '<label for="sFile">Picture of your brainrot (optional)</label><input id="sFile" type="file" accept="image/*">' +
+    '<div id="imgPreview" style="margin-top:8px"></div>' +
+    '<label for="sImg">Or paste a picture URL (optional — leave blank to use the game picture)</label><input id="sImg" type="url" placeholder="https://…">' +
     '<p style="margin-top:12px"><button class="btn block" type="submit">List for sale</button></p><div id="formMsg"></div></form></div>' +
     '<div class="card"><div class="toolbar"><input id="saleQ" type="search" placeholder="Search for sale — brainrot, seller, traits…" aria-label="Search listings"></div></div>' +
     '<div id="saleList"></div>' + finePrintHtml();
@@ -712,9 +723,10 @@ ROUTES.sales = async function () {
   const likeLabel = (liked, count) => (liked ? 'Liked' : 'Like') + ' (' + (count || 0) + ')';
   const cardHtml = s =>
     '<div class="card brainrot-card">' +
-    (s.image ? '<img src="' + esc(s.image) + '" alt="' + esc(s.brainrotName) + '">' : '<span class="no-pic">NO PICTURE YET</span>') +
+    (s.image ? '<img src="' + esc(s.image) + '" alt="' + esc(s.brainrotName) + '" loading="lazy">' : '<span class="no-pic">NO PICTURE YET</span>') +
     '<div class="info"><h3>' + esc(s.brainrotName) + '</h3>' +
     '<div class="price">' + money(s.price_usd) + '</div>' +
+    (s.mutation && s.mutation !== 'Default' ? '<div class="range">Mutation: ' + esc(s.mutation) + '</div>' : '') +
     (s.gamePicture ? '<div class="range">Game picture — seller uploaded no photo</div>' : '') +
     '<p class="muted small">' + userLink({ id: s.user_id, username: s.username, badge: null }) + ' · ' + timeAgo(s.created_at) +
     (s.status === 'open' ? '' : ' · <span class="badge">SOLD</span>') + '</p>' +
@@ -790,6 +802,7 @@ ROUTES.sales = async function () {
     const list = allSales.filter(s => !q ||
       s.brainrotName.toLowerCase().includes(q) ||
       (s.username || '').toLowerCase().includes(q) ||
+      (s.mutation || '').toLowerCase().includes(q) ||
       (s.description || '').toLowerCase().includes(q));
     $('#saleList').innerHTML = list.length ? list.map(cardHtml).join('')
       : '<div class="card"><p class="muted">' + (allSales.length ? 'No listings match that search.' : 'Nothing for sale right now.') + '</p></div>';
@@ -802,12 +815,47 @@ ROUTES.sales = async function () {
   };
   await load();
   $('#saleQ').addEventListener('input', e => renderSales(e.target.value.trim().toLowerCase()));
+  // Shrink a picked picture in the browser (max 800px, JPEG) so the upload stays small.
+  const shrinkImage = file => new Promise((resolve, reject) => {
+    const img = new Image();
+    const objUrl = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(objUrl);
+      const max = 800;
+      const scale = Math.min(1, max / Math.max(img.width, img.height));
+      const w = Math.max(1, Math.round(img.width * scale));
+      const h = Math.max(1, Math.round(img.height * scale));
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      resolve(canvas.toDataURL('image/jpeg', 0.85));
+    };
+    img.onerror = () => { URL.revokeObjectURL(objUrl); reject(new Error('Could not read that picture.')); };
+    img.src = objUrl;
+  });
+  $('#sFile').addEventListener('change', () => {
+    const f = $('#sFile').files[0];
+    const prev = $('#imgPreview');
+    if (!f) { prev.innerHTML = ''; return; }
+    if (!f.type.startsWith('image/')) { prev.innerHTML = '<div class="error">That is not a picture.</div>'; return; }
+    prev.innerHTML = '<img src="' + esc(URL.createObjectURL(f)) + '" alt="preview" style="max-width:160px;border-radius:10px">';
+  });
   $('#saleForm').addEventListener('submit', async e => {
     e.preventDefault();
     const msg = $('#formMsg');
     try {
-      await post('/api/sales', { brainrotId: $('#sItem').value, priceUsd: Number($('#sPrice').value), description: $('#sDesc').value.trim(), imageUrl: $('#sImg').value.trim() || null });
+      let imageUrl = $('#sImg').value.trim() || null;
+      const file = $('#sFile').files[0];
+      if (file) {
+        if (!file.type.startsWith('image/')) throw new Error('That file is not a picture.');
+        msg.innerHTML = '<p class="muted">Uploading picture…</p>';
+        const data = await shrinkImage(file);
+        const up = await post('/api/sales/upload-image', { data });
+        imageUrl = up.url;
+      }
+      await post('/api/sales', { brainrotId: $('#sItem').value, priceUsd: Number($('#sPrice').value), description: $('#sDesc').value.trim(), imageUrl, mutation: $('#sMut').value });
       $('#saleForm').reset();
+      $('#imgPreview').innerHTML = '';
       toast('Listed for sale.');
       await load();
     } catch (err) { msg.innerHTML = '<div class="error">' + esc(err.message) + '</div>'; }
