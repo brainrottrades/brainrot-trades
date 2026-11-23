@@ -52,6 +52,11 @@ const emailCfg = readJson('config/email.json', null) || (process.env.SMTP_HOST ?
   from: process.env.SMTP_FROM || process.env.SMTP_USER,
 } : null);
 const OWNER_EMAIL = (adminsCfg.ownerEmail || 'pgevil22@gmail.com').toLowerCase();
+// SendGrid (HTTPS API) — the recommended mail path on Render, where
+// outbound SMTP (Gmail ports 587/465) is blocked and times out.
+// Set SENDGRID_API_KEY (+ optional SENDGRID_FROM) in Render env vars.
+const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY || '';
+const SENDGRID_FROM = process.env.SENDGRID_FROM || (emailCfg && emailCfg.from) || 'pgevil22@gmail.com';
 const CO_OWNER_EMAILS = new Set((adminsCfg.coOwnerEmails || ['amber_fenton@yahoo.com']).map(e => e.toLowerCase()));
 const ADMIN_EMAILS = new Set((adminsCfg.adminEmails || []).map(e => e.toLowerCase()));
 const PRICE_USD = Number(paypalCfg.priceUsd || 3);
@@ -196,7 +201,12 @@ CREATE TABLE IF NOT EXISTS custom_brainrots (
 `);
 
 // ---------- mail ----------
+// SendGrid (HTTPS) is preferred when configured — Render blocks outbound
+// SMTP, so Gmail SMTP times out on both ports 587 and 465.
 let transporter = null;
+if (SENDGRID_API_KEY) {
+  console.log('[mail] SendGrid configured (HTTPS API)');
+}
 if (emailCfg && emailCfg.host && emailCfg.user) {
   transporter = nodemailer.createTransport({
     host: emailCfg.host, port: Number(emailCfg.port || 587),
@@ -204,12 +214,25 @@ if (emailCfg && emailCfg.host && emailCfg.user) {
     auth: { user: emailCfg.user, pass: emailCfg.pass },
   });
   console.log('[mail] SMTP configured:', emailCfg.host);
-} else {
+} else if (!SENDGRID_API_KEY) {
   console.log('[mail] WARNING: config/email.json not found — DEV MODE. Verification codes will be printed to this console, NOT emailed. Do not use dev mode in production.');
 }
 async function sendVerificationEmail(email, code) {
   const subject = 'Your Brainrot Trades verification code';
   const text = `Your Brainrot Trades verification code is: ${code}\n\nIt expires in 30 minutes. If you did not request this, ignore this email.`;
+  if (SENDGRID_API_KEY) {
+    const resp = await fetch('https://api.sendgrid.com/v3/mail/send', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${SENDGRID_API_KEY}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ personalizations: [{ to: [{ email }] }], from: { email: SENDGRID_FROM }, subject, content: [{ type: 'text/plain', value: text }] }),
+      signal: AbortSignal.timeout(15000),
+    });
+    if (!resp.ok) {
+      const detail = await resp.text().catch(() => '');
+      throw new Error(`SendGrid ${resp.status}: ${detail.slice(0, 200)}`);
+    }
+    return { devMode: false };
+  }
   if (!transporter) {
     console.log(`[mail-dev] Verification code for ${email}: ${code} (dev mode — no email sent)`);
     return { devMode: true };
@@ -397,7 +420,7 @@ app.get('/api/config', (req, res) => {
     planId: PLAN_ID, planName: paypalCfg.planName || 'Brainrot Trades Monthly',
     clientId: CLIENT_ID, paypalConfigured: !!(CLIENT_ID && PLAN_ID),
     paypalSecretConfigured: !!PAYPAL_SECRET,
-    emailConfigured: !!transporter,
+    emailConfigured: !!transporter || !!SENDGRID_API_KEY,
   });
 });
 app.get('/api/me', (req, res) => {
@@ -471,6 +494,7 @@ app.post('/api/auth/resend-code', async (req, res) => {
     const r = await sendVerificationEmail(em, code);
     res.json({ ok: true, devMode: r.devMode });
   } catch (e) {
+    console.error('[mail] resend failed:', e.message);
     res.status(500).json({ error: 'Could not send the email. Try again later.' });
   }
 });
@@ -1037,6 +1061,6 @@ app.use((req, res) => {
 app.listen(PORT, HOST, () => {
   console.log(`Brainrot Trades running at http://${HOST}:${PORT}`);
   console.log(`Subscription: $${PRICE_USD}/month USD, PayPal plan ${PLAN_ID || '(not configured)'} — plan configured: ${!!(CLIENT_ID && PLAN_ID)}`);
-  console.log(`Email configured: ${!!transporter} (dev mode prints codes to this console)`);
+  console.log(`Email configured: ${!!transporter || !!SENDGRID_API_KEY} (${SENDGRID_API_KEY ? 'SendGrid' : (transporter ? 'SMTP' : 'dev mode — codes print to this console')})`);
   console.log(`PayPal Secret configured: ${!!PAYPAL_SECRET} (server-side verification ${PAYPAL_SECRET ? 'ON' : 'OFF — see README'})`);
 });
