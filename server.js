@@ -164,6 +164,23 @@ CREATE TABLE IF NOT EXISTS reports (
   status TEXT NOT NULL DEFAULT 'open',
   created_at TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS help_topics (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL,
+  username TEXT NOT NULL,
+  title TEXT NOT NULL,
+  message TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'open',
+  created_at TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS help_replies (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  topic_id INTEGER NOT NULL,
+  user_id INTEGER NOT NULL,
+  username TEXT NOT NULL,
+  text TEXT NOT NULL,
+  created_at TEXT NOT NULL
+);
 CREATE TABLE IF NOT EXISTS dm_messages (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   from_user_id INTEGER NOT NULL,
@@ -741,6 +758,74 @@ app.post('/api/chat/:id/hide', requireAdmin, (req, res) => {
 });
 app.delete('/api/chat/:id', requireAdmin, (req, res) => {
   db.prepare('DELETE FROM chat_messages WHERE id = ?').run(req.params.id);
+  res.json({ ok: true });
+});
+
+// ---------- help forum ----------
+// Players and admins both post here. The owner and admins read every topic.
+app.get('/api/help', requireAccess, (req, res) => {
+  const rows = db.prepare(`SELECT t.*,
+    (SELECT COUNT(*) FROM help_replies WHERE topic_id = t.id) AS replyCount,
+    (SELECT MAX(created_at) FROM help_replies WHERE topic_id = t.id) AS lastReplyAt,
+    u.email AS author_email
+    FROM help_topics t LEFT JOIN users u ON u.id = t.user_id ORDER BY t.id DESC LIMIT 100`).all();
+  res.json({ topics: rows.map(t => ({ id: t.id, user_id: t.user_id, username: t.username,
+    badge: t.author_email ? publicUser({ email: t.author_email }).badge : null,
+    title: t.title, status: t.status, replyCount: t.replyCount, lastReplyAt: t.lastReplyAt, created_at: t.created_at })) });
+});
+app.post('/api/help', requireAccess, (req, res) => {
+  const title = String(req.body?.title || '').trim().slice(0, 120);
+  const message = String(req.body?.message || '').trim().slice(0, 1000);
+  if (!title) return res.status(400).json({ error: 'Give your help request a title.' });
+  if (!message) return res.status(400).json({ error: 'Write what you need help with.' });
+  const info = db.prepare('INSERT INTO help_topics (user_id, username, title, message, created_at) VALUES (?,?,?,?,?)')
+    .run(req.user.id, req.user.username, title, message, nowIso());
+  res.json({ ok: true, id: Number(info.lastInsertRowid) });
+});
+app.get('/api/help/:id', requireAccess, (req, res) => {
+  const t = db.prepare('SELECT t.*, u.email AS author_email FROM help_topics t LEFT JOIN users u ON u.id = t.user_id WHERE t.id = ?').get(req.params.id);
+  if (!t) return res.status(404).json({ error: 'Help topic not found.' });
+  const replies = db.prepare('SELECT r.*, u.email AS author_email FROM help_replies r LEFT JOIN users u ON u.id = r.user_id WHERE r.topic_id = ? ORDER BY r.id ASC').all(t.id);
+  res.json({ topic: { id: t.id, user_id: t.user_id, username: t.username,
+      badge: t.author_email ? publicUser({ email: t.author_email }).badge : null,
+      title: t.title, message: t.message, status: t.status, created_at: t.created_at },
+    replies: replies.map(r => ({ id: r.id, user_id: r.user_id, username: r.username,
+      badge: r.author_email ? publicUser({ email: r.author_email }).badge : null,
+      text: r.text, created_at: r.created_at })) });
+});
+app.post('/api/help/:id/reply', requireAccess, (req, res) => {
+  const t = db.prepare('SELECT * FROM help_topics WHERE id = ?').get(req.params.id);
+  if (!t) return res.status(404).json({ error: 'Help topic not found.' });
+  const email = req.user.email.toLowerCase();
+  const admin = email === OWNER_EMAIL || CO_OWNER_EMAILS.has(email) || ADMIN_EMAILS.has(email);
+  if (t.status === 'closed' && !admin) return res.status(400).json({ error: 'This help topic is closed.' });
+  const text = String(req.body?.text || '').trim().slice(0, 500);
+  if (!text) return res.status(400).json({ error: 'Message is empty.' });
+  const info = db.prepare('INSERT INTO help_replies (topic_id, user_id, username, text, created_at) VALUES (?,?,?,?,?)')
+    .run(t.id, req.user.id, req.user.username, text, nowIso());
+  res.json({ ok: true, id: Number(info.lastInsertRowid) });
+});
+app.post('/api/help/:id/close', requireAuth, (req, res) => {
+  const t = db.prepare('SELECT * FROM help_topics WHERE id = ?').get(req.params.id);
+  if (!t) return res.status(404).json({ error: 'Help topic not found.' });
+  const email = req.user.email.toLowerCase();
+  const admin = email === OWNER_EMAIL || CO_OWNER_EMAILS.has(email) || ADMIN_EMAILS.has(email);
+  if (t.user_id !== req.user.id && !admin) return res.status(403).json({ error: 'Only the person who asked, or an admin, can close this.' });
+  db.prepare("UPDATE help_topics SET status = 'closed' WHERE id = ?").run(t.id);
+  res.json({ ok: true });
+});
+app.post('/api/help/:id/reopen', requireAuth, (req, res) => {
+  const t = db.prepare('SELECT * FROM help_topics WHERE id = ?').get(req.params.id);
+  if (!t) return res.status(404).json({ error: 'Help topic not found.' });
+  const email = req.user.email.toLowerCase();
+  const admin = email === OWNER_EMAIL || CO_OWNER_EMAILS.has(email) || ADMIN_EMAILS.has(email);
+  if (t.user_id !== req.user.id && !admin) return res.status(403).json({ error: 'Only the person who asked, or an admin, can reopen this.' });
+  db.prepare("UPDATE help_topics SET status = 'open' WHERE id = ?").run(t.id);
+  res.json({ ok: true });
+});
+app.delete('/api/help/:id', requireAdmin, (req, res) => {
+  db.prepare('DELETE FROM help_replies WHERE topic_id = ?').run(req.params.id);
+  db.prepare('DELETE FROM help_topics WHERE id = ?').run(req.params.id);
   res.json({ ok: true });
 });
 
