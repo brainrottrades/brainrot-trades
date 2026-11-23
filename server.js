@@ -59,10 +59,23 @@ const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY || '';
 const SENDGRID_FROM = process.env.SENDGRID_FROM || (emailCfg && emailCfg.from) || 'pgevil22@gmail.com';
 const CO_OWNER_EMAILS = new Set((adminsCfg.coOwnerEmails || ['amber_fenton@yahoo.com']).map(e => e.toLowerCase()));
 const ADMIN_EMAILS = new Set((adminsCfg.adminEmails || []).map(e => e.toLowerCase()));
+// Owner, co-owner and admin accounts are pre-authorized: they verify
+// instantly on sign-up (no code, no approval) and get free access.
+function isStaffEmail(em) {
+  const e = (em || '').toLowerCase();
+  return e === OWNER_EMAIL || CO_OWNER_EMAILS.has(e) || ADMIN_EMAILS.has(e);
+}
 const PRICE_USD = Number(paypalCfg.priceUsd || 3);
 const PLAN_ID = paypalCfg.planId || '';
 const CLIENT_ID = paypalCfg.clientId || '';
 const PAYPAL_SECRET = process.env.PAYPAL_CLIENT_SECRET || '';
+// Google sign-in (OAuth 2.0). Set GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET in
+// Render env vars; without them the Google button is hidden. No email codes:
+// Google verifies the email itself, and email sign-ups wait for owner approval.
+const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '';
+const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || '';
+const GOOGLE_REDIRECT_URI = process.env.GOOGLE_REDIRECT_URI || 'https://brainrot-trades.onrender.com/api/auth/google/callback';
+const googleAuthEnabled = !!(GOOGLE_CLIENT_ID && GOOGLE_CLIENT_SECRET);
 
 const brainrotsData = JSON.parse(fs.readFileSync(path.join(ROOT, 'data', 'brainrots.json'), 'utf8'));
 
@@ -198,7 +211,25 @@ CREATE TABLE IF NOT EXISTS custom_brainrots (
   created_by TEXT,
   created_at TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS sale_likes (
+  listing_id INTEGER NOT NULL,
+  user_id INTEGER NOT NULL,
+  created_at TEXT NOT NULL,
+  PRIMARY KEY (listing_id, user_id)
+);
+CREATE TABLE IF NOT EXISTS sale_comments (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  listing_id INTEGER NOT NULL,
+  user_id INTEGER NOT NULL,
+  username TEXT NOT NULL,
+  text TEXT NOT NULL,
+  created_at TEXT NOT NULL
+);
 `);
+// Google sign-in (added Nov 22, 2026): link a Google account id to a user.
+// The ALTER is idempotent — it throws if the column already exists.
+try { db.exec('ALTER TABLE users ADD COLUMN google_id TEXT'); } catch (e) { /* column already exists */ }
+db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_users_google_id ON users(google_id)');
 
 // ---------- mail ----------
 // SendGrid (HTTPS) is preferred when configured — Render blocks outbound
@@ -421,6 +452,7 @@ app.get('/api/config', (req, res) => {
     clientId: CLIENT_ID, paypalConfigured: !!(CLIENT_ID && PLAN_ID),
     paypalSecretConfigured: !!PAYPAL_SECRET,
     emailConfigured: !!transporter || !!SENDGRID_API_KEY,
+    googleAuthEnabled,
   });
 });
 app.get('/api/me', (req, res) => {
@@ -447,20 +479,17 @@ app.post('/api/auth/register', async (req, res) => {
     return res.status(400).json({ error: 'An account with that email already exists. Try logging in.' });
   }
   const salt = crypto.randomBytes(16).toString('hex');
-  const info = db.prepare('INSERT INTO users (username, email, password_hash, password_salt, verified, created_at) VALUES (?,?,?,?,0,?)')
-    .run(username, em, hashPassword(password, salt), salt, nowIso());
-  const code = String(Math.floor(100000 + Math.random() * 900000));
-  const expires = new Date(Date.now() + 30 * 60 * 1000).toISOString();
-  db.prepare('INSERT OR REPLACE INTO verifications (email, code, expires_at, attempts) VALUES (?,?,?,0)').run(em, code, expires);
-  try {
-    const r = await sendVerificationEmail(em, code);
-    res.json({ ok: true, userId: Number(info.lastInsertRowid), devMode: r.devMode, message: r.devMode
-      ? 'Email is not configured on this server (dev mode). The code was printed to the server console.'
-      : 'Verification code sent to your email. It expires in 30 minutes.' });
-  } catch (e) {
-    console.error('[mail] send failed:', e.message);
-    res.status(500).json({ error: 'Could not send the verification email. Try again later.' });
+  // No emailed codes: owner/co-owner/admin accounts verify instantly;
+  // everyone else waits for the owner to approve them (Admin panel).
+  const autoVerified = isStaffEmail(em) ? 1 : 0;
+  const info = db.prepare('INSERT INTO users (username, email, password_hash, password_salt, verified, created_at) VALUES (?,?,?,?,?,?)')
+    .run(username, em, hashPassword(password, salt), salt, autoVerified, nowIso());
+  if (autoVerified) {
+    const u = db.prepare('SELECT * FROM users WHERE id = ?').get(Number(info.lastInsertRowid));
+    setSession(res, u.id);
+    return res.json({ ok: true, user: publicUser(u), hasAccess: hasAccess(u), message: 'Account created — you are verified.' });
   }
+  res.json({ ok: true, pendingApproval: true, message: 'Account created. The owner will approve it — then log in and subscribe for full access.' });
 });
 app.post('/api/auth/verify', (req, res) => {
   const { email, code } = req.body || {};
@@ -496,6 +525,77 @@ app.post('/api/auth/resend-code', async (req, res) => {
   } catch (e) {
     console.error('[mail] resend failed:', e.message);
     res.status(500).json({ error: 'Could not send the email. Try again later.' });
+  }
+});
+// ---------- Google sign-in (OAuth 2.0) ----------
+// Google verifies the email, so a Google account is verified instantly —
+// no code, no approval. Email/password sign-ups still wait for approval.
+function googleAuthUrl(state) {
+  const q = new URLSearchParams({
+    client_id: GOOGLE_CLIENT_ID, redirect_uri: GOOGLE_REDIRECT_URI,
+    response_type: 'code', scope: 'openid email profile',
+    state, prompt: 'select_account', access_type: 'online',
+  });
+  return 'https://accounts.google.com/o/oauth2/v2/auth?' + q.toString();
+}
+app.get('/api/auth/google', (req, res) => {
+  if (!googleAuthEnabled) return res.status(400).send('Google sign-in is not configured on this server.');
+  const state = crypto.randomBytes(16).toString('hex');
+  res.setHeader('Set-Cookie', `bt_oauth_state=${state}; HttpOnly; Path=/; Max-Age=600; SameSite=Lax`);
+  res.redirect(googleAuthUrl(state));
+});
+app.get('/api/auth/google/callback', async (req, res) => {
+  const fail = () => res.redirect('/#/login?google=failed');
+  try {
+    if (!googleAuthEnabled) return fail();
+    if (req.query.error) return fail();
+    const stateCookie = (req.headers.cookie || '').split(';').map(s => s.trim())
+      .find(s => s.startsWith('bt_oauth_state='));
+    const stateVal = stateCookie ? decodeURIComponent(stateCookie.slice('bt_oauth_state='.length)) : null;
+    if (!stateVal || stateVal !== req.query.state || !req.query.code) return fail();
+    res.setHeader('Set-Cookie', 'bt_oauth_state=; HttpOnly; Path=/; Max-Age=0; SameSite=Lax');
+    const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        code: req.query.code, client_id: GOOGLE_CLIENT_ID,
+        client_secret: GOOGLE_CLIENT_SECRET, redirect_uri: GOOGLE_REDIRECT_URI,
+        grant_type: 'authorization_code',
+      }),
+      signal: AbortSignal.timeout(15000),
+    });
+    if (!tokenRes.ok) { console.error('[google] token exchange failed:', tokenRes.status); return fail(); }
+    const tokens = await tokenRes.json();
+    const meRes = await fetch('https://openidconnect.googleapis.com/v1/userinfo', {
+      headers: { Authorization: `Bearer ${tokens.access_token}` },
+      signal: AbortSignal.timeout(15000),
+    });
+    if (!meRes.ok) { console.error('[google] userinfo failed:', meRes.status); return fail(); }
+    const profile = await meRes.json();
+    if (!profile || !profile.email || !profile.verified_email) return fail();
+    const em = String(profile.email).toLowerCase();
+    const sub = String(profile.sub);
+    let u = db.prepare('SELECT * FROM users WHERE google_id = ?').get(sub)
+      || db.prepare('SELECT * FROM users WHERE email = ?').get(em);
+    if (u) {
+      if (u.banned) return fail();
+      db.prepare('UPDATE users SET google_id = ?, verified = 1 WHERE id = ?').run(sub, u.id);
+      u = db.prepare('SELECT * FROM users WHERE id = ?').get(u.id);
+    } else {
+      let base = em.split('@')[0].replace(/[^A-Za-z0-9_.-]/g, '').slice(0, 20) || 'member';
+      if (base.length < 3) base = 'member' + base;
+      let username = base, n = 1;
+      while (db.prepare('SELECT 1 FROM users WHERE username = ?').get(username)) username = base + (n++);
+      const salt = crypto.randomBytes(16).toString('hex');
+      const info = db.prepare('INSERT INTO users (username, email, password_hash, password_salt, google_id, verified, created_at) VALUES (?,?,?,?,?,?,?)')
+        .run(username, em, hashPassword(crypto.randomBytes(32).toString('hex'), salt), salt, sub, 1, nowIso());
+      u = db.prepare('SELECT * FROM users WHERE id = ?').get(Number(info.lastInsertRowid));
+    }
+    setSession(res, u.id);
+    res.redirect('/#/prices');
+  } catch (e) {
+    console.error('[google] callback failed:', e.message);
+    fail();
   }
 });
 app.post('/api/auth/login', (req, res) => {
@@ -662,9 +762,13 @@ app.delete('/api/trades/:id', requireAdmin, (req, res) => {
 app.get('/api/sales', requireAccess, (req, res) => {
   const rows = db.prepare('SELECT * FROM sale_listings ORDER BY id DESC LIMIT 100').all();
   const items = new Map(effectiveItems().map(i => [i.id, i]));
+  const likeCounts = new Map(db.prepare('SELECT listing_id, COUNT(*) c FROM sale_likes GROUP BY listing_id').all().map(r => [r.listing_id, r.c]));
+  const myLikes = new Set(db.prepare('SELECT listing_id FROM sale_likes WHERE user_id = ?').all(req.user.id).map(r => r.listing_id));
+  const commentCounts = new Map(db.prepare('SELECT listing_id, COUNT(*) c FROM sale_comments GROUP BY listing_id').all().map(r => [r.listing_id, r.c]));
   res.json({ sales: rows.map(r => {
     const item = items.get(r.brainrot_id);
-    return { ...r, image: r.image_url || (item && item.image ? `/img/brainrots/${item.image}` : null), brainrotName: item ? item.name : r.brainrot_id, gamePicture: !r.image_url };
+    return { ...r, image: r.image_url || (item && item.image ? `/img/brainrots/${item.image}` : null), brainrotName: item ? item.name : r.brainrot_id, gamePicture: !r.image_url,
+      likeCount: likeCounts.get(r.id) || 0, likedByMe: myLikes.has(r.id), commentCount: commentCounts.get(r.id) || 0 };
   }) });
 });
 app.post('/api/sales', requireAccess, (req, res) => {
@@ -713,9 +817,43 @@ app.get('/api/contact/sent', requireAccess, (req, res) => {
 });
 
 // ---------- reports ----------
+// ---------- sale likes & comments ----------
+app.post('/api/sales/:id/like', requireAccess, (req, res) => {
+  const s = db.prepare('SELECT id FROM sale_listings WHERE id = ?').get(req.params.id);
+  if (!s) return res.status(404).json({ error: 'Listing not found.' });
+  const existing = db.prepare('SELECT 1 FROM sale_likes WHERE listing_id = ? AND user_id = ?').get(s.id, req.user.id);
+  if (existing) db.prepare('DELETE FROM sale_likes WHERE listing_id = ? AND user_id = ?').run(s.id, req.user.id);
+  else db.prepare('INSERT INTO sale_likes (listing_id, user_id, created_at) VALUES (?,?,?)').run(s.id, req.user.id, nowIso());
+  const count = db.prepare('SELECT COUNT(*) c FROM sale_likes WHERE listing_id = ?').get(s.id).c;
+  res.json({ ok: true, liked: !existing, likeCount: count });
+});
+app.get('/api/sales/:id/comments', requireAccess, (req, res) => {
+  const s = db.prepare('SELECT id FROM sale_listings WHERE id = ?').get(req.params.id);
+  if (!s) return res.status(404).json({ error: 'Listing not found.' });
+  const rows = db.prepare('SELECT * FROM sale_comments WHERE listing_id = ? ORDER BY id ASC LIMIT 100').all(s.id);
+  res.json({ comments: rows });
+});
+app.post('/api/sales/:id/comments', requireAccess, (req, res) => {
+  const s = db.prepare('SELECT id FROM sale_listings WHERE id = ?').get(req.params.id);
+  if (!s) return res.status(404).json({ error: 'Listing not found.' });
+  const text = String((req.body || {}).text || '').trim();
+  if (!text) return res.status(400).json({ error: 'Write something first.' });
+  const info = db.prepare('INSERT INTO sale_comments (listing_id, user_id, username, text, created_at) VALUES (?,?,?,?,?)')
+    .run(s.id, req.user.id, req.user.username, text.slice(0, 500), nowIso());
+  res.json({ ok: true, id: Number(info.lastInsertRowid) });
+});
+app.delete('/api/sales/comments/:id', requireAuth, (req, res) => {
+  const c = db.prepare('SELECT * FROM sale_comments WHERE id = ?').get(req.params.id);
+  if (!c) return res.status(404).json({ error: 'Comment not found.' });
+  const email = req.user.email.toLowerCase();
+  const isAdmin = email === OWNER_EMAIL || CO_OWNER_EMAILS.has(email) || ADMIN_EMAILS.has(email);
+  if (c.user_id !== req.user.id && !isAdmin) return res.status(403).json({ error: 'Not yours.' });
+  db.prepare('DELETE FROM sale_comments WHERE id = ?').run(c.id);
+  res.json({ ok: true });
+});
 app.post('/api/reports', requireAccess, (req, res) => {
   const { targetType, targetId, reason } = req.body || {};
-  if (!['chat', 'trade', 'sale', 'member', 'dm'].includes(targetType)) return res.status(400).json({ error: 'Invalid report type.' });
+  if (!['chat', 'trade', 'sale', 'member', 'dm', 'sale_comment'].includes(targetType)) return res.status(400).json({ error: 'Invalid report type.' });
   if (!reason || !String(reason).trim()) return res.status(400).json({ error: 'Say what is wrong.' });
   const info = db.prepare('INSERT INTO reports (reporter_id, reporter_username, target_type, target_id, reason, created_at) VALUES (?,?,?,?,?,?)')
     .run(req.user.id, req.user.username, targetType, Number(targetId) || 0, String(reason).trim().slice(0, 500), nowIso());
@@ -959,6 +1097,33 @@ app.post('/api/admin/members/:id/unban', requireAdmin, (req, res) => {
   db.prepare('UPDATE users SET banned = 0 WHERE id = ?').run(req.params.id);
   res.json({ ok: true });
 });
+// ---------- account approvals (no emailed codes) ----------
+// Email/password sign-ups wait here until an admin approves them. Google
+// sign-ins and owner/co-owner/admin emails verify instantly instead.
+app.get('/api/admin/pending', requireAdmin, (req, res) => {
+  const rows = db.prepare('SELECT id, username, email, created_at FROM users WHERE verified = 0 AND banned = 0 ORDER BY created_at ASC').all();
+  res.json({ pending: rows });
+});
+app.post('/api/admin/approve', requireAdmin, (req, res) => {
+  const { userId } = req.body || {};
+  const u = db.prepare('SELECT * FROM users WHERE id = ?').get(Number(userId));
+  if (!u) return res.status(400).json({ error: 'No such account.' });
+  if (u.verified) return res.status(400).json({ error: 'That account is already verified.' });
+  db.prepare('UPDATE users SET verified = 1 WHERE id = ?').run(u.id);
+  db.prepare('DELETE FROM verifications WHERE email = ?').run(u.email.toLowerCase());
+  res.json({ ok: true, user: publicUser(db.prepare('SELECT * FROM users WHERE id = ?').get(u.id)) });
+});
+app.post('/api/admin/reject', requireAdmin, (req, res) => {
+  const { userId } = req.body || {};
+  const u = db.prepare('SELECT * FROM users WHERE id = ?').get(Number(userId));
+  if (!u) return res.status(400).json({ error: 'No such account.' });
+  if (isStaffEmail(u.email)) return res.status(400).json({ error: 'That account cannot be rejected.' });
+  db.prepare('DELETE FROM sessions WHERE user_id = ?').run(u.id);
+  db.prepare('DELETE FROM subscriptions WHERE user_id = ?').run(u.id);
+  db.prepare('DELETE FROM verifications WHERE email = ?').run(u.email.toLowerCase());
+  db.prepare('DELETE FROM users WHERE id = ?').run(u.id);
+  res.json({ ok: true });
+});
 app.post('/api/admin/subscription/grant', requireAdmin, (req, res) => {
   const { userId, days } = req.body || {};
   const t = db.prepare('SELECT * FROM users WHERE id = ?').get(userId);
@@ -1047,7 +1212,13 @@ app.get('/api/admin/stats', requireAdmin, (req, res) => {
   const trades = db.prepare("SELECT COUNT(*) c FROM trade_posts WHERE status='open'").get().c;
   const sales = db.prepare("SELECT COUNT(*) c FROM sale_listings WHERE status='open'").get().c;
   const openReports = db.prepare("SELECT COUNT(*) c FROM reports WHERE status='open'").get().c;
-  res.json({ members, activeSubscriptions: subs, chatMessages: chat, openTrades: trades, openSales: sales, openReports, paypalSecretConfigured: !!PAYPAL_SECRET });
+  const pendingApprovals = db.prepare('SELECT COUNT(*) c FROM users WHERE verified = 0 AND banned = 0').get().c;
+  res.json({ members, activeSubscriptions: subs, chatMessages: chat, openTrades: trades, openSales: sales, openReports, pendingApprovals, paypalSecretConfigured: !!PAYPAL_SECRET });
+});
+
+// Privacy policy page (also the URL Google needs to publish the sign-in app).
+app.get('/privacy', (req, res) => {
+  res.sendFile(path.join(ROOT, 'public', 'privacy.html'));
 });
 
 // ---------- SPA fallback ----------
