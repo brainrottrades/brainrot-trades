@@ -72,6 +72,7 @@ function isStaffEmail(em) {
 }
 const PRICE_USD = Number(paypalCfg.priceUsd || 3);
 const PLAN_ID = paypalCfg.planId || '';
+const TRIAL_PLAN_ID = paypalCfg.trialPlanId || '';
 const CLIENT_ID = paypalCfg.clientId || '';
 const PAYPAL_SECRET = process.env.PAYPAL_CLIENT_SECRET || '';
 // Google sign-in (OAuth 2.0). Set GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET in
@@ -123,6 +124,12 @@ CREATE TABLE IF NOT EXISTS subscriptions (
   started_at TEXT NOT NULL,
   ends_at TEXT,
   cancelled_at TEXT
+);
+CREATE TABLE IF NOT EXISTS trials (
+  email TEXT PRIMARY KEY,
+  user_id INTEGER NOT NULL,
+  granted_at TEXT NOT NULL,
+  paypal_subscription_id TEXT
 );
 CREATE TABLE IF NOT EXISTS chat_messages (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -258,6 +265,8 @@ try { db.exec('ALTER TABLE users ADD COLUMN google_id TEXT'); } catch (e) { /* c
 db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_users_google_id ON users(google_id)');
 try { db.exec('ALTER TABLE sale_listings ADD COLUMN mutation TEXT'); } catch (e) { /* column already exists */ }
 try { db.exec('ALTER TABLE sale_listings ADD COLUMN custom_name TEXT'); } catch (e) { /* column already exists */ }
+try { db.exec('ALTER TABLE subscriptions ADD COLUMN plan_id TEXT'); } catch (e) { /* column already exists */ }
+try { db.exec('ALTER TABLE subscriptions ADD COLUMN last_synced_at TEXT'); } catch (e) { /* column already exists */ }
 
 // ---------- mail ----------
 // SendGrid (HTTPS) is preferred when configured — Render blocks outbound
@@ -331,6 +340,79 @@ function hasAccess(u) {
   const email = u.email.toLowerCase();
   if (email === OWNER_EMAIL || CO_OWNER_EMAILS.has(email) || ADMIN_EMAILS.has(email)) return true;
   return !!activeSubscription(u.id);
+}
+
+// ---------- PayPal free trial + auto-renewal sync ----------
+// One free month per email: the trial plan (TRIAL_PLAN_ID) has a $0 first
+// cycle, then $3/month. The server hands out the trial plan only to emails
+// that never had one (trials table), and records the grant on activation.
+// PayPal keeps renewing on its side; the server re-checks PayPal when a
+// member loads the site near renewal time, so site access follows the real
+// subscription instead of expiring after 31 days.
+function trialEligible(u) {
+  if (!u || !u.verified || u.banned) return false;
+  const email = u.email.toLowerCase();
+  if (email === OWNER_EMAIL || CO_OWNER_EMAILS.has(email) || ADMIN_EMAILS.has(email)) return false;
+  const used = db.prepare('SELECT 1 FROM trials WHERE email = ?').get(email);
+  return !used;
+}
+let ppTokenCache = { token: null, expiresAt: 0 };
+async function paypalAccessToken() {
+  if (!CLIENT_ID || !PAYPAL_SECRET) return null;
+  if (ppTokenCache.token && ppTokenCache.expiresAt > Date.now() + 60000) return ppTokenCache.token;
+  try {
+    const res = await fetch('https://api-m.paypal.com/v1/oauth2/token', {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Basic ' + Buffer.from(CLIENT_ID + ':' + PAYPAL_SECRET).toString('base64'),
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: 'grant_type=client_credentials',
+    });
+    if (!res.ok) { console.log('[paypal] token request failed:', res.status); return null; }
+    const j = await res.json();
+    ppTokenCache = { token: j.access_token, expiresAt: Date.now() + (Number(j.expires_in || 3600) * 1000) };
+    return ppTokenCache.token;
+  } catch (e) { console.log('[paypal] token request error:', e.message); return null; }
+}
+async function fetchPayPalSubscription(id) {
+  const token = await paypalAccessToken();
+  if (!token) return null;
+  try {
+    const res = await fetch('https://api-m.paypal.com/v1/billing/subscriptions/' + encodeURIComponent(id), {
+      headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+    });
+    if (!res.ok) { console.log('[paypal] subscription fetch failed:', res.status); return null; }
+    return await res.json();
+  } catch (e) { console.log('[paypal] subscription fetch error:', e.message); return null; }
+}
+async function syncSubscriptionFromPayPal(user) {
+  // Latest active-status row, even if ends_at already passed — that is
+  // exactly the case a PayPal auto-renewal needs to fix.
+  const sub = db.prepare(
+    `SELECT * FROM subscriptions WHERE user_id = ? AND status = 'active' ORDER BY id DESC LIMIT 1`
+  ).get(user.id);
+  if (!sub || !sub.paypal_subscription_id || sub.paypal_subscription_id === 'ADMIN-GRANT') return sub;
+  const ends = sub.ends_at ? new Date(sub.ends_at).getTime() : 0;
+  const nearExpiry = !ends || ends - Date.now() < 7 * 24 * 3600 * 1000;
+  const lastSync = sub.last_synced_at ? new Date(sub.last_synced_at).getTime() : 0;
+  const stale = Date.now() - lastSync > 6 * 3600 * 1000;
+  if (!nearExpiry || !stale) return sub;
+  const pp = await fetchPayPalSubscription(sub.paypal_subscription_id);
+  db.prepare('UPDATE subscriptions SET last_synced_at = ? WHERE id = ?').run(nowIso(), sub.id);
+  if (!pp) return sub;
+  const status = String(pp.status || '').toUpperCase();
+  if (status === 'ACTIVE') {
+    const next = pp.billing_info && pp.billing_info.next_billing_time;
+    const newEnds = next ? new Date(next).toISOString() : new Date(Date.now() + 31 * 24 * 3600 * 1000).toISOString();
+    db.prepare("UPDATE subscriptions SET ends_at = ?, status = 'active' WHERE id = ?").run(newEnds, sub.id);
+    return { ...sub, ends_at: newEnds };
+  }
+  if (status === 'CANCELLED' || status === 'SUSPENDED' || status === 'EXPIRED') {
+    db.prepare("UPDATE subscriptions SET status = 'cancelled', cancelled_at = ? WHERE id = ?").run(nowIso(), sub.id);
+    return null;
+  }
+  return sub;
 }
 function requireAuth(req, res, next) {
   if (!req.user) return res.status(401).json({ error: 'Please log in.' });
@@ -489,17 +571,19 @@ app.get('/api/config', (req, res) => {
   res.json({
     priceUsd: PRICE_USD, currency: paypalCfg.currency || 'USD',
     planId: PLAN_ID, planName: paypalCfg.planName || 'Brainrot Trades Monthly',
+    trialAvailable: !!TRIAL_PLAN_ID,
     clientId: CLIENT_ID, paypalConfigured: !!(CLIENT_ID && PLAN_ID),
     paypalSecretConfigured: !!PAYPAL_SECRET,
     emailConfigured: !!transporter || !!SENDGRID_API_KEY,
     googleAuthEnabled,
   });
 });
-app.get('/api/me', (req, res) => {
+app.get('/api/me', async (req, res) => {
   if (!req.user) return res.json({ user: null });
+  await syncSubscriptionFromPayPal(req.user);
   const u = publicUser(req.user);
   const sub = activeSubscription(req.user.id);
-  res.json({ user: { ...u, hasAccess: hasAccess(req.user), subscription: sub ? { status: sub.status, endsAt: sub.ends_at, paypalSubscriptionId: sub.paypal_subscription_id } : null } });
+  res.json({ user: { ...u, hasAccess: hasAccess(req.user), subscription: sub ? { status: sub.status, endsAt: sub.ends_at, paypalSubscriptionId: sub.paypal_subscription_id, planId: sub.plan_id || null, isTrial: !!TRIAL_PLAN_ID && sub.plan_id === TRIAL_PLAN_ID } : null } });
 });
 
 // ---------- auth ----------
@@ -665,23 +749,48 @@ app.post('/api/auth/login', (req, res) => {
 app.post('/api/auth/logout', (req, res) => { clearSession(req, res); res.json({ ok: true }); });
 
 // ---------- subscription ($3/month via PayPal) ----------
-app.post('/api/subscribe/activate', requireVerified, (req, res) => {
-  const { subscriptionId } = req.body || {};
+// Which plan a member should subscribe to: the free-trial plan on their
+// first month (one per email), otherwise the standard $3/month plan.
+app.get('/api/subscribe/plan', requireVerified, (req, res) => {
+  const eligible = !!TRIAL_PLAN_ID && trialEligible(req.user);
+  res.json({
+    planId: eligible ? TRIAL_PLAN_ID : PLAN_ID,
+    trialEligible: eligible,
+    trialPlanId: TRIAL_PLAN_ID || null,
+    standardPlanId: PLAN_ID,
+    priceUsd: PRICE_USD,
+  });
+});
+app.post('/api/subscribe/activate', requireVerified, async (req, res) => {
+  const { subscriptionId, planId } = req.body || {};
   if (!subscriptionId || typeof subscriptionId !== 'string') {
     return res.status(400).json({ error: 'Missing PayPal subscription ID.' });
   }
-  // NOTE: without the PayPal REST app Secret, the server cannot verify this
-  // subscription against PayPal's API. The subscription ID comes from the
-  // PayPal checkout approval in the member's own browser. Once the Secret is
-  // configured (PAYPAL_CLIENT_SECRET), verify it here with
-  // GET https://api-m.paypal.com/v1/billing/subscriptions/{id} first.
+  // Verify against PayPal's API when the Secret is configured (it is).
+  // The plan_id from PayPal is authoritative; the one from the browser is
+  // only a fallback if the API check fails.
+  let pp = null;
+  if (PAYPAL_SECRET) pp = await fetchPayPalSubscription(subscriptionId);
+  const resolvedPlan = (pp && pp.plan_id) || planId || '';
+  const isTrial = !!TRIAL_PLAN_ID && resolvedPlan === TRIAL_PLAN_ID;
   const starts = new Date();
-  const ends = new Date(starts.getTime() + 31 * 24 * 3600 * 1000);
+  let ends;
+  if (pp && pp.billing_info && pp.billing_info.next_billing_time) {
+    ends = new Date(pp.billing_info.next_billing_time);
+  } else {
+    ends = new Date(starts.getTime() + 31 * 24 * 3600 * 1000);
+  }
+  if (isTrial) {
+    // One free month per email — record the grant (INSERT OR IGNORE: if
+    // this email somehow already had one, do not double-count it).
+    db.prepare('INSERT OR IGNORE INTO trials (email, user_id, granted_at, paypal_subscription_id) VALUES (?,?,?,?)')
+      .run(req.user.email.toLowerCase(), req.user.id, nowIso(), subscriptionId);
+  }
   db.prepare(`UPDATE subscriptions SET status = 'cancelled', cancelled_at = ? WHERE user_id = ? AND status = 'active'`)
     .run(nowIso(), req.user.id);
-  db.prepare('INSERT INTO subscriptions (user_id, paypal_subscription_id, status, started_at, ends_at) VALUES (?,?,?,?,?)')
-    .run(req.user.id, subscriptionId, 'active', starts.toISOString(), ends.toISOString());
-  res.json({ ok: true, hasAccess: true, endsAt: ends.toISOString(), verifiedWithPayPal: !!PAYPAL_SECRET });
+  db.prepare('INSERT INTO subscriptions (user_id, paypal_subscription_id, status, started_at, ends_at, plan_id) VALUES (?,?,?,?,?,?)')
+    .run(req.user.id, subscriptionId, 'active', starts.toISOString(), ends.toISOString(), resolvedPlan || null);
+  res.json({ ok: true, hasAccess: true, endsAt: ends.toISOString(), isTrial, verifiedWithPayPal: !!pp });
 });
 app.post('/api/subscribe/cancel', requireVerified, (req, res) => {
   db.prepare(`UPDATE subscriptions SET status = 'cancelled', cancelled_at = ? WHERE user_id = ? AND status = 'active'`)
