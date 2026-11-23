@@ -404,7 +404,17 @@ function findItem(id) {
 const app = express();
 app.use(express.json({ limit: '2mb' }));
 app.use(express.urlencoded({ extended: false }));
-app.use(express.static(path.join(ROOT, 'public'), { maxAge: '1h' }));
+app.use(express.static(path.join(ROOT, 'public'), {
+  maxAge: '1h',
+  setHeaders(res, filePath) {
+    // App code must always be fresh: a deploy has to reach every member
+    // at once, not after their cached copy expires (members kept seeing
+    // the old app.js for an hour after the For Sale nav went live).
+    // no-cache still lets the browser revalidate with the ETag, so
+    // unchanged files cost one tiny 304. Pictures keep the 1h cache.
+    if (/\.(js|css|html)$/.test(filePath)) res.setHeader('Cache-Control', 'no-cache');
+  },
+}));
 
 // Session: signed HttpOnly cookie. Signature prevents tampering without the secret.
 function signCookie(token) {
@@ -1250,6 +1260,7 @@ app.get('/privacy', (req, res) => {
 // everything the API and static files did not match.
 app.use((req, res) => {
   if (req.path.startsWith('/api/')) return res.status(404).json({ error: 'Not found.' });
+  res.set('Cache-Control', 'no-cache');
   res.sendFile(path.join(ROOT, 'public', 'index.html'));
 });
 
