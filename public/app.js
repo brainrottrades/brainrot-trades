@@ -154,7 +154,7 @@ async function refreshUnread() {
 
 // ---------- router ----------
 function parseHash() {
-  const h = location.hash.replace(/^#\/?/, '') || 'home';
+  const h = location.hash.replace(/^#\/?/, '').split('?')[0] || 'home';
   const parts = h.split('/');
   return { route: parts[0] || 'home', arg: parts[1] || null };
 }
@@ -488,6 +488,8 @@ ROUTES.checker = async function () {
         'Prices are sellers’ asking prices, not sold prices.</p></div>';
     } catch (err) { box.innerHTML = '<div class="error">' + esc(err.message) + '</div>'; }
   });
+  // Coming from a "Check price" link: show that brainrot's price right away.
+  if (prefill && items.some(i => i.id === prefill)) $('#checkForm').dispatchEvent(new Event('submit', { cancelable: true }));
   $('#cmpForm').addEventListener('submit', async e => {
     e.preventDefault();
     const box = $('#cmpResult');
