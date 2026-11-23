@@ -728,10 +728,49 @@ ROUTES.trades = async function () {
       '<div class="row">' +
       (t.status === 'open' && t.user_id !== state.me.id ? '<button class="btn" data-dm-user="' + t.user_id + '" data-dm-name="' + esc(t.username) + '">Message</button>' : '') +
       (t.user_id === state.me.id && t.status === 'open' ? '<button class="btn secondary" data-close-trade="' + t.id + '">Close trade</button>' : '') +
+      '<button class="btn ghost' + (t.likedByMe ? ' liked' : '') + '" data-like-trade="' + t.id + '">' + likeLabel(t.likedByMe, t.likeCount) + '</button>' +
+      '<button class="btn ghost" data-trade-comments="' + t.id + '">Comments (' + (t.commentCount || 0) + ')</button>' +
       '<button class="btn ghost" data-report-trade="' + t.id + '">Report</button>' +
       (isAdmin() ? '<button class="btn danger" data-del-trade="' + t.id + '">Delete</button>' : '') +
-      '</div></div>').join('')
+      '</div><div class="comments" id="trade-comments-' + t.id + '" style="display:none"></div></div>').join('')
       : '<div class="card"><p class="muted">No trades posted yet. Be the first.</p></div>';
+  };
+  const loadTradeComments = async tradeId => {
+    const box = $('#trade-comments-' + tradeId);
+    if (!box) return;
+    const updateBtn = count => {
+      const b = document.querySelector('[data-trade-comments="' + tradeId + '"]');
+      if (b) b.textContent = 'Comments (' + count + ')';
+    };
+    try {
+      const r = await get('/api/trades/' + tradeId + '/comments');
+      updateBtn(r.comments.length);
+      box.innerHTML = '<div class="comments-list">' + (r.comments.length ? r.comments.map(c =>
+        '<div class="comment"><strong>' + esc(c.username) + '</strong> <span class="muted small">' + timeAgo(c.created_at) + '</span>' +
+        '<p>' + esc(c.text) + '</p>' +
+        '<div class="row">' +
+        (c.user_id === state.me.id || isAdmin() ? '<button class="btn ghost" data-del-trade-comment="' + c.id + '" data-trade="' + tradeId + '">Delete</button>' : '') +
+        (c.user_id !== state.me.id ? '<button class="btn ghost" data-report-trade-comment="' + c.id + '">Report</button>' : '') +
+        '</div></div>').join('') : '<p class="muted small">No comments yet — be the first.</p>') + '</div>' +
+        '<form data-trade-comment-form="' + tradeId + '"><div class="row"><input type="text" maxlength="500" placeholder="Ask about this trade…" aria-label="Write a comment" required><button class="btn" type="submit">Comment</button></div></form>';
+      const form = box.querySelector('[data-trade-comment-form]');
+      form.addEventListener('submit', async e => {
+        e.preventDefault();
+        const input = form.querySelector('input');
+        try {
+          await post('/api/trades/' + tradeId + '/comments', { text: input.value });
+          await loadTradeComments(tradeId);
+        } catch (err) { toast(err.message); }
+      });
+      box.querySelectorAll('[data-del-trade-comment]').forEach(b => b.addEventListener('click', async () => {
+        if (!confirm('Delete this comment?')) return;
+        try {
+          await del('/api/trades/comments/' + b.dataset.delTradeComment);
+          await loadTradeComments(tradeId);
+        } catch (err) { toast(err.message); }
+      }));
+      box.querySelectorAll('[data-report-trade-comment]').forEach(b => b.addEventListener('click', () => reportPrompt('trade_comment', b.dataset.reportTradeComment)));
+    } catch (err) { box.innerHTML = '<div class="error">' + esc(err.message) + '</div>'; }
   };
   await load();
   $('#tradeForm').addEventListener('submit', async e => {
@@ -751,6 +790,23 @@ ROUTES.trades = async function () {
     if (closeBtn) { try { await post('/api/trades/' + closeBtn.dataset.closeTrade + '/close'); await load(); } catch (err) { toast(err.message); } return; }
     const delBtn = e.target.closest('[data-del-trade]');
     if (delBtn) { if (!confirm('Delete this trade post?')) return; try { await del('/api/trades/' + delBtn.dataset.delTrade); await load(); } catch (err) { toast(err.message); } return; }
+    const likeBtn = e.target.closest('[data-like-trade]');
+    if (likeBtn) {
+      try {
+        const r = await post('/api/trades/' + likeBtn.dataset.likeTrade + '/like');
+        likeBtn.innerHTML = likeLabel(r.liked, r.likeCount);
+        likeBtn.classList.toggle('liked', r.liked);
+      } catch (err) { toast(err.message); }
+      return;
+    }
+    const cmtBtn = e.target.closest('[data-trade-comments]');
+    if (cmtBtn) {
+      const box = $('#trade-comments-' + cmtBtn.dataset.tradeComments);
+      if (!box) return;
+      if (box.style.display === 'none') { box.style.display = ''; await loadTradeComments(Number(cmtBtn.dataset.tradeComments)); }
+      else box.style.display = 'none';
+      return;
+    }
     const repBtn = e.target.closest('[data-report-trade]');
     if (repBtn) reportPrompt('trade', repBtn.dataset.reportTrade);
   });
