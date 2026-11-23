@@ -624,13 +624,14 @@ app.get('/api/auth/google/callback', async (req, res) => {
     });
     if (!meRes.ok) { console.error('[google] userinfo failed:', meRes.status); return fail(); }
     const profile = await meRes.json();
-    if (!profile || !profile.email || !profile.verified_email) return fail();
+    // Google's userinfo returns `email_verified`, not `verified_email`.
+    if (!profile || !profile.email || !profile.email_verified) { console.error('[google] sign-in failed: profile email not verified'); return fail(); }
     const em = String(profile.email).toLowerCase();
     const sub = String(profile.sub);
     let u = db.prepare('SELECT * FROM users WHERE google_id = ?').get(sub)
       || db.prepare('SELECT * FROM users WHERE email = ?').get(em);
     if (u) {
-      if (u.banned) return fail();
+      if (u.banned) { console.error('[google] sign-in failed: account banned'); return fail(); }
       db.prepare('UPDATE users SET google_id = ?, verified = 1 WHERE id = ?').run(sub, u.id);
       u = db.prepare('SELECT * FROM users WHERE id = ?').get(u.id);
     } else {
