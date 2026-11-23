@@ -41,7 +41,7 @@ function toast(msg, ms) {
 }
 function badgeHtml(badge) {
   if (!badge) return '';
-  const cls = badge === 'OWNER' ? 'owner' : (badge === 'CO-OWNER' ? 'coowner' : '');
+  const cls = badge === 'OWNER' ? 'owner' : (badge === 'CO-OWNER' ? 'coowner' : (badge === 'ADMIN' ? 'admin' : ''));
   return ' <span class="badge ' + cls + '">' + esc(badge) + '</span>';
 }
 function verifiedBadge(u) {
@@ -208,7 +208,7 @@ ROUTES.home = async function () {
     ['Live chat', 'Talk with other players and organise trades in real time.'],
     ['Trade board', 'Post what you have and what you want — other members come to you.'],
     ['For Sale', 'List brainrots for real money with your own price and picture.'],
-    ['Verified members', 'Every member verifies their email. Owners and co-owners are badged.'],
+    ['Verified members', 'Every member verifies their email. Owners, co-owners and admins are badged.'],
     ['Owner moderation & safety', 'Scam checklist before every deal, report and block buttons, and the owner reviews reports.'],
   ];
   view.innerHTML =
@@ -330,8 +330,8 @@ ROUTES.subscribe = async function () {
     const sub = state.me.subscription;
     view.innerHTML = '<div class="card"><h1>Your subscription</h1>' +
       '<p>You have full access' + (sub && sub.endsAt ? ' until ' + esc(new Date(sub.endsAt).toLocaleDateString()) : '') + '.</p>' +
-      (state.me.isOwner || state.me.isCoOwner
-        ? '<p class="muted">Owner and co-owner accounts get full access free — you are never charged.</p>'
+      (state.me.isAdmin
+        ? '<p class="muted">Owner, co-owner and admin accounts get full access free — you are never charged.</p>'
         : '<p><button class="btn danger" id="cancelSub">Cancel subscription</button></p>' +
           '<p class="form-note">Cancelling here stops your access on this site. Also cancel in your PayPal account (Settings → Payments → Manage automatic payments) to stop PayPal billing you.</p>') +
       '<p><a class="btn secondary" href="#/prices">Back to the price list</a></p><div id="formMsg"></div></div>' + finePrintHtml();
@@ -916,7 +916,7 @@ ROUTES.account = async function () {
     '<p><strong>' + esc(me.username) + '</strong>' + badgeHtml(me.badge) + verifiedBadge(me) + '</p>' +
     '<p class="muted">' + esc(me.email) + ' · Joined ' + esc(new Date(me.createdAt).toLocaleDateString()) + '</p>' +
     '<p>Subscription: ' + (me.hasAccess
-      ? '<strong>Active</strong>' + (me.subscription && me.subscription.endsAt ? ' until ' + esc(new Date(me.subscription.endsAt).toLocaleDateString()) : ' (free — owner/co-owner)')
+      ? '<strong>Active</strong>' + (me.subscription && me.subscription.endsAt ? ' until ' + esc(new Date(me.subscription.endsAt).toLocaleDateString()) : ' (free — owner, co-owner or admin)')
       : '<strong>Not active</strong> — <a href="#/subscribe">subscribe $' + (state.cfg ? state.cfg.priceUsd : 3) + '/month</a>') + '</p>' +
     (me.isAdmin ? '<p><a class="btn" href="#/admin">Open admin panel</a></p>' : '') +
     '<p><a class="btn secondary" href="#/messages">Messages' + (state.unread ? ' (' + state.unread + ' unread)' : '') + '</a> ' +
@@ -943,8 +943,8 @@ ROUTES.admin = async function () {
   const items = await ensureItems();
   view.innerHTML =
     '<div class="card"><h1>Admin panel</h1>' +
-    '<p class="muted">Owner: ' + esc('pgevil22@gmail.com') + ' · Co-owner: amber_fenton@yahoo.com. '
-    + 'You can never warn or ban the owner, and a co-owner cannot warn or ban another co-owner.</p>' +
+    '<p class="muted">Owner: ' + esc('pgevil22@gmail.com') + ' · Co-owner: amber_fenton@yahoo.com · Admin: vcadorette@icloud.com. '
+    + 'You can never warn or ban the owner, a co-owner cannot warn or ban another co-owner, and only the owner or a co-owner can warn or ban an admin.</p>' +
     '<div class="grid two">' +
     '<div class="card"><strong>Members</strong><div class="price">' + stats.members + '</div></div>' +
     '<div class="card"><strong>Active subscriptions</strong><div class="price">' + stats.activeSubscriptions + '</div></div>' +
