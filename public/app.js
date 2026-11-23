@@ -231,7 +231,7 @@ ROUTES.home = async function () {
     ['Owner moderation & safety', 'Scam checklist before every deal, report and block buttons, and the owner reviews reports.'],
   ];
   view.innerHTML =
-    '<section class="hero card"><img class="hero-icon" src="/img/skibidi-toilet.png" alt="Skibidi Toilet">' +
+    '<section class="hero card"><img class="hero-icon" src="/img/skibidi-toilet-v2.png" alt="Skibidi Toilet">' +
     '<h1>Brainrot Trades</h1>' +
     '<p class="muted">Fortnite Steal the Brainrot (Creative map 3225-0366-8885) — Eternals only. Prices, trades, rarity and a safe place to buy, sell and trade. Not the Roblox game.</p>' +
     '<p class="price-tag">$' + price + '/month</p>' +
