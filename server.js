@@ -30,7 +30,12 @@ const ROOT = __dirname;
 const PORT = Number(process.env.PORT || 3000);
 const HOST = process.env.HOST || '0.0.0.0';
 const SESSION_SECRET = process.env.SESSION_SECRET || 'change-me-in-production';
-const DB_PATH = path.join(ROOT, 'data', 'app.db');
+// Persistent data lives on DATA_DIR when set (Render persistent disk, mounted
+// at /data). Otherwise it lives in ./data — which the free tier wipes on every
+// deploy. The disk is what makes the site permanent: accounts, listings,
+// chats, price edits and uploaded pictures all survive deploys.
+const DATA_DIR = process.env.DATA_DIR || path.join(ROOT, 'data');
+const DB_PATH = path.join(DATA_DIR, 'app.db');
 
 // ---------- config ----------
 function readJson(rel, fallback) {
@@ -80,7 +85,7 @@ const googleAuthEnabled = !!(GOOGLE_CLIENT_ID && GOOGLE_CLIENT_SECRET);
 const brainrotsData = JSON.parse(fs.readFileSync(path.join(ROOT, 'data', 'brainrots.json'), 'utf8'));
 
 // ---------- database ----------
-fs.mkdirSync(path.join(ROOT, 'data'), { recursive: true });
+fs.mkdirSync(DATA_DIR, { recursive: true });
 const db = new DatabaseSync(DB_PATH);
 db.exec(`
 CREATE TABLE IF NOT EXISTS users (
@@ -433,6 +438,8 @@ app.use(express.static(path.join(ROOT, 'public'), {
     if (/\.(js|css|html)$/.test(filePath)) res.setHeader('Cache-Control', 'no-cache');
   },
 }));
+// Uploaded sale pictures live on the disk too (DATA_DIR/uploads), served at /uploads.
+app.use('/uploads', express.static(path.join(DATA_DIR, 'uploads'), { maxAge: '1h' }));
 
 // Session: signed HttpOnly cookie. Signature prevents tampering without the secret.
 function signCookie(token) {
@@ -893,7 +900,7 @@ app.post('/api/sales', requireAccess, (req, res) => {
 // Sellers upload a picture (shrunk in the browser first). Stored under
 // public/uploads/ and served as a normal file. Free-tier note: uploads live
 // on the server disk, so they disappear on redeploy — same as listings.
-const UPLOAD_DIR = path.join(ROOT, 'public', 'uploads');
+const UPLOAD_DIR = path.join(DATA_DIR, 'uploads');
 const UPLOAD_MIME = { 'image/jpeg': '.jpg', 'image/png': '.png', 'image/webp': '.webp', 'image/gif': '.gif' };
 app.post('/api/sales/upload-image', requireAccess, (req, res) => {
   const data = String((req.body || {}).data || '');
