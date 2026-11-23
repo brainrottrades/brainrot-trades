@@ -668,9 +668,21 @@ app.post('/api/auth/resend-code', async (req, res) => {
 // ---------- Google sign-in (OAuth 2.0) ----------
 // Google verifies the email, so a Google account is verified instantly —
 // no code, no approval. Email/password sign-ups still wait for approval.
-function googleAuthUrl(state) {
+// The Google callback must live on the same host the member started from:
+// the session cookie is host-only, so a callback on brainrot-trades.onrender.com
+// after starting on fnbrainrotmarket.com drops the member on the old domain.
+// Build the redirect URI from the request host (allowlisted), and send the
+// member back to that same host after login.
+const GOOGLE_HOSTS = ['fnbrainrotmarket.com', 'www.fnbrainrotmarket.com', 'brainrot-trades.onrender.com'];
+function googleCallbackFor(req) {
+  const host = String(req.get('host') || '').split(':')[0].toLowerCase();
+  const allowed = GOOGLE_HOSTS.includes(host) ? host : 'fnbrainrotmarket.com';
+  const origin = 'https://' + allowed;
+  return { origin, redirectUri: origin + '/api/auth/google/callback' };
+}
+function googleAuthUrl(state, redirectUri) {
   const q = new URLSearchParams({
-    client_id: GOOGLE_CLIENT_ID, redirect_uri: GOOGLE_REDIRECT_URI,
+    client_id: GOOGLE_CLIENT_ID, redirect_uri: redirectUri,
     response_type: 'code', scope: 'openid email profile',
     state, prompt: 'select_account', access_type: 'online',
   });
@@ -684,11 +696,13 @@ app.get('/api/auth/google', (req, res) => {
   // the sign-in silently at the state check. The cookie is still checked first.
   db.prepare('DELETE FROM oauth_states WHERE created_at < ?').run(new Date(Date.now() - 30 * 60 * 1000).toISOString());
   db.prepare('INSERT INTO oauth_states (state, created_at) VALUES (?,?)').run(state, nowIso());
+  const { redirectUri } = googleCallbackFor(req);
   res.setHeader('Set-Cookie', `bt_oauth_state=${state}; HttpOnly; Path=/; Max-Age=1800; SameSite=Lax`);
-  res.redirect(googleAuthUrl(state));
+  res.redirect(googleAuthUrl(state, redirectUri));
 });
 app.get('/api/auth/google/callback', async (req, res) => {
-  const fail = why => { if (why) console.error('[google] sign-in failed:', why); return res.redirect('/#/login?google=failed'); };
+  const { origin, redirectUri } = googleCallbackFor(req);
+  const fail = why => { if (why) console.error('[google] sign-in failed:', why); return res.redirect(origin + '/#/login?google=failed'); };
   try {
     if (!googleAuthEnabled) return fail('google auth not configured');
     if (req.query.error) return fail('google returned error: ' + req.query.error);
@@ -709,7 +723,7 @@ app.get('/api/auth/google/callback', async (req, res) => {
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: new URLSearchParams({
         code: req.query.code, client_id: GOOGLE_CLIENT_ID,
-        client_secret: GOOGLE_CLIENT_SECRET, redirect_uri: GOOGLE_REDIRECT_URI,
+        client_secret: GOOGLE_CLIENT_SECRET, redirect_uri: redirectUri,
         grant_type: 'authorization_code',
       }),
       signal: AbortSignal.timeout(15000),
@@ -743,7 +757,7 @@ app.get('/api/auth/google/callback', async (req, res) => {
       u = db.prepare('SELECT * FROM users WHERE id = ?').get(Number(info.lastInsertRowid));
     }
     setSession(res, u.id);
-    res.redirect('/#/prices');
+    res.redirect(origin + '/#/prices');
   } catch (e) {
     console.error('[google] callback failed:', e.message);
     fail();
