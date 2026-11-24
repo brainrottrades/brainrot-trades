@@ -267,7 +267,7 @@ ROUTES.home = async function () {
       ? '<p><a class="btn" href="#/prices">Open the price list</a> <a class="btn secondary" href="#/sales">Sell a brainrot</a></p>'
       : '<p><a class="btn" href="#/signup">Sign up</a> <a class="btn secondary" href="#/login">Log in</a></p>') +
     '</section>' +
-    '<div class="card"><h2>🎁 Giveaway</h2><p><strong>Invite 5 friends, get in the raffle.</strong> Share your invite link — every friend who joins and gets verified counts, and your name goes on the board. <a href="#/giveaway">See the giveaway board</a></p></div>' +
+    '<div class="card"><h2>🎁 Giveaway</h2><p><strong>Invite 5 friends, get in the raffle.</strong> Prize: a mystery gift. Share your invite link — every friend who joins and gets verified counts, and your name goes on the board. <a href="#/giveaway">See the giveaway board</a></p></div>' +
     '<div class="card"><h2>What you get</h2><ul class="feature-list">' +
     feats.map(f => '<li><strong>' + (f[2] ? '<a href="#/' + f[2] + '">' + esc(f[0]) + '</a>' : esc(f[0])) + '</strong><br><span class="muted">' + esc(f[1]) + '</span></li>').join('') +
     '</ul></div>' +
@@ -308,6 +308,7 @@ ROUTES.giveaway = async function () {
   view.innerHTML =
     '<div class="card"><h1>🎁 Giveaway</h1>' +
     '<p><strong>Invite ' + needed + ' friends, get in the raffle.</strong></p>' +
+    '<p>🏆 <strong>Prize: a mystery gift.</strong> The winner finds out what it is when they win.</p>' +
     '<ol class="steps">' +
     '<li><strong>Share your invite link</strong> — it\'s yours alone, below.</li>' +
     '<li><strong>Friends sign up through it</strong> — they count once their account is verified.</li>' +
