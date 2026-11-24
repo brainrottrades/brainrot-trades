@@ -285,6 +285,9 @@ try { db.exec('ALTER TABLE subscriptions ADD COLUMN last_synced_at TEXT'); } cat
 // and a record of raffle draws. referred_by is the inviter's user id (NULL = no referrer).
 try { db.exec('ALTER TABLE users ADD COLUMN referred_by INTEGER'); } catch (e) { /* column already exists */ }
 db.exec('CREATE INDEX IF NOT EXISTS idx_users_referred_by ON users(referred_by)');
+// Online presence (added Nov 23, 2026): last_seen is updated when a member
+// loads the site and by a heartbeat the app sends every minute while signed in.
+try { db.exec('ALTER TABLE users ADD COLUMN last_seen TEXT'); } catch (e) { /* column already exists */ }
 db.exec(`CREATE TABLE IF NOT EXISTS raffle_draws (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   winner_id INTEGER NOT NULL,
@@ -349,9 +352,27 @@ function publicUser(u) {
   return {
     id: u.id, username: u.username, email: u.email, verified: !!u.verified,
     warnCount: u.warn_count, banned: !!u.banned, createdAt: u.created_at,
+    online: isOnline(u),
     isOwner, isCoOwner, isAdminEmail, isAdmin: isOwner || isCoOwner || isAdminEmail,
     badge: isOwner ? 'OWNER' : (isCoOwner ? 'CO-OWNER' : (isAdminEmail ? 'ADMIN' : null)),
   };
+}
+
+// ---------- online presence ----------
+// A member counts as online if they were seen in the last 5 minutes.
+// last_seen is updated when they load the site (/api/me) and by a
+// heartbeat the app sends every minute while they are signed in.
+const ONLINE_WINDOW_MS = 5 * 60 * 1000;
+function isOnline(u) {
+  if (!u || !u.last_seen) return false;
+  // last_seen is written as an ISO string, but tolerate the space-separated
+  // SQLite datetime format too (treat it as UTC, not local time).
+  const raw = String(u.last_seen);
+  const iso = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}/.test(raw) ? raw.replace(' ', 'T') + 'Z' : raw;
+  return Date.now() - new Date(iso).getTime() < ONLINE_WINDOW_MS;
+}
+function touchLastSeen(userId) {
+  db.prepare('UPDATE users SET last_seen = ? WHERE id = ?').run(nowIso(), userId);
 }
 
 // ---------- referrals & giveaway ----------
@@ -375,7 +396,7 @@ function giveawayBoard() {
   const entered = [];
   for (const u of users) {
     const s = referralStats(u.id);
-    if (s.entered) entered.push({ id: u.id, username: u.username, badge: publicUser(u).badge, count: s.count });
+    if (s.entered) entered.push({ id: u.id, username: u.username, badge: publicUser(u).badge, online: isOnline(u), count: s.count });
   }
   entered.sort((a, b) => b.count - a.count || a.username.localeCompare(b.username));
   const draws = db.prepare('SELECT winner_username, drawn_at, drawn_by FROM raffle_draws ORDER BY id DESC LIMIT 10').all();
@@ -386,7 +407,7 @@ function adminReferralRows() {
   return users.map(u => {
     const s = referralStats(u.id);
     const refBy = u.referred_by ? db.prepare('SELECT username FROM users WHERE id = ?').get(u.referred_by) : null;
-    return { id: u.id, username: u.username, badge: publicUser(u).badge, email: u.email, verified: !!u.verified, referredBy: refBy ? refBy.username : null, referralCount: s.count, entered: s.entered };
+    return { id: u.id, username: u.username, badge: publicUser(u).badge, email: u.email, verified: !!u.verified, online: isOnline(u), referredBy: refBy ? refBy.username : null, referralCount: s.count, entered: s.entered };
   });
 }
 function activeSubscription(userId) {
@@ -642,9 +663,19 @@ app.get('/api/config', (req, res) => {
 app.get('/api/me', async (req, res) => {
   if (!req.user) return res.json({ user: null });
   await syncSubscriptionFromPayPal(req.user);
+  const seen = nowIso();
+  db.prepare('UPDATE users SET last_seen = ? WHERE id = ?').run(seen, req.user.id);
+  req.user.last_seen = seen;
   const u = publicUser(req.user);
   const sub = activeSubscription(req.user.id);
   res.json({ user: { ...u, hasAccess: hasAccess(req.user), subscription: sub ? { status: sub.status, endsAt: sub.ends_at, paypalSubscriptionId: sub.paypal_subscription_id, planId: sub.plan_id || null, isTrial: !!TRIAL_PLAN_ID && sub.plan_id === TRIAL_PLAN_ID } : null } });
+});
+
+// Heartbeat: the app calls this every minute while signed in, so the
+// online dot stays accurate. /api/me (page load) also updates last_seen.
+app.post('/api/presence/heartbeat', requireAccess, (req, res) => {
+  touchLastSeen(req.user.id);
+  res.json({ ok: true });
 });
 
 // ---------- referrals & giveaway (API) ----------
@@ -701,8 +732,8 @@ app.post('/api/auth/register', async (req, res) => {
     const referrer = findReferrer(ref);
     if (referrer) referredBy = referrer.id;
   }
-  const info = db.prepare('INSERT INTO users (username, email, password_hash, password_salt, verified, referred_by, created_at) VALUES (?,?,?,?,?,?,?)')
-    .run(username, em, hashPassword(password, salt), salt, autoVerified, referredBy, nowIso());
+  const info = db.prepare('INSERT INTO users (username, email, password_hash, password_salt, verified, referred_by, last_seen, created_at) VALUES (?,?,?,?,?,?,?,?)')
+    .run(username, em, hashPassword(password, salt), salt, autoVerified, referredBy, nowIso(), nowIso());
   if (autoVerified) {
     const u = db.prepare('SELECT * FROM users WHERE id = ?').get(Number(info.lastInsertRowid));
     setSession(res, u.id);
@@ -848,8 +879,8 @@ app.get('/api/auth/google/callback', async (req, res) => {
         const referrer = findReferrer(refName);
         if (referrer) referredBy = referrer.id;
       }
-      const info = db.prepare('INSERT INTO users (username, email, password_hash, password_salt, google_id, verified, referred_by, created_at) VALUES (?,?,?,?,?,?,?,?)')
-        .run(username, em, hashPassword(crypto.randomBytes(32).toString('hex'), salt), salt, sub, 1, referredBy, nowIso());
+      const info = db.prepare('INSERT INTO users (username, email, password_hash, password_salt, google_id, verified, referred_by, last_seen, created_at) VALUES (?,?,?,?,?,?,?,?,?)')
+        .run(username, em, hashPassword(crypto.randomBytes(32).toString('hex'), salt), salt, sub, 1, referredBy, nowIso(), nowIso());
       u = db.prepare('SELECT * FROM users WHERE id = ?').get(Number(info.lastInsertRowid));
     }
     setSession(res, u.id);
@@ -996,7 +1027,14 @@ const lastChatAt = new Map();
 app.get('/api/chat', requireAccess, (req, res) => {
   const after = Number(req.query.after || 0);
   const rows = db.prepare('SELECT * FROM chat_messages WHERE id > ? ORDER BY id ASC LIMIT 100').all(after);
-  res.json({ messages: rows });
+  // Online dot: attach each author's current online state.
+  const ids = [...new Set(rows.map(r => r.user_id))];
+  const online = new Map();
+  if (ids.length) {
+    const users = db.prepare('SELECT id, last_seen FROM users WHERE id IN (' + ids.map(() => '?').join(',') + ')').all(...ids);
+    for (const u of users) online.set(u.id, isOnline(u));
+  }
+  res.json({ messages: rows.map(r => ({ ...r, online: !!online.get(r.user_id) })) });
 });
 app.post('/api/chat', requireAccess, (req, res) => {
   const text = String(req.body?.text || '').trim();
@@ -1296,12 +1334,12 @@ app.get('/api/members', requireAccess, (req, res) => {
   const where = q ? 'AND LOWER(username) LIKE ?' : '';
   const args = q ? [`%${q}%`] : [];
   const rows = db.prepare(
-    `SELECT id, username, email, verified, created_at FROM users
+    `SELECT id, username, email, verified, created_at, last_seen FROM users
      WHERE banned = 0 ${where} ORDER BY username ASC LIMIT ? OFFSET ?`
   ).all(...args, limit, offset);
   res.json({ members: rows.map(u => ({
     id: u.id, username: u.username, badge: publicUser(u).badge,
-    verified: !!u.verified, joined: u.created_at,
+    verified: !!u.verified, joined: u.created_at, online: isOnline(u),
   })) });
 });
 app.get('/api/members/:id', requireAccess, (req, res) => {
@@ -1321,7 +1359,7 @@ app.get('/api/members/:id', requireAccess, (req, res) => {
   res.json({
     member: {
       id: u.id, username: u.username, badge: publicUser(u).badge,
-      verified: !!u.verified, joined: u.created_at, friendCount,
+      verified: !!u.verified, joined: u.created_at, friendCount, online: isOnline(u),
     },
     friendStatus: !fr ? 'none' : fr.status === 'accepted' ? 'friends'
       : (fr.requester_id === me ? 'pending_out' : 'pending_in'),
@@ -1358,7 +1396,7 @@ app.post('/api/friends/request/:userId', requireAccess, (req, res) => {
 app.get('/api/friends', requireAccess, (req, res) => {
   const me = req.user.id;
   const rows = db.prepare(
-    `SELECT f.*, u.id AS uid, u.username, u.email, u.verified
+    `SELECT f.*, u.id AS uid, u.username, u.email, u.verified, u.last_seen
      FROM friendships f JOIN users u
        ON u.id = CASE WHEN f.requester_id = ? THEN f.addressee_id ELSE f.requester_id END
      WHERE f.requester_id = ? OR f.addressee_id = ?
@@ -1366,7 +1404,7 @@ app.get('/api/friends', requireAccess, (req, res) => {
   ).all(me, me, me);
   const shape = r => ({
     id: r.id, status: r.status, direction: r.requester_id === me ? 'out' : 'in',
-    user: { id: r.uid, username: r.username, badge: publicUser({ email: r.email }).badge, verified: !!r.verified },
+    user: { id: r.uid, username: r.username, badge: publicUser({ email: r.email }).badge, verified: !!r.verified, online: isOnline(r) },
     createdAt: r.created_at,
   });
   res.json({
