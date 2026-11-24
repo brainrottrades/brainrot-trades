@@ -48,8 +48,12 @@ function verifiedBadge(u) {
   return u && u.verified ? ' <span class="badge verified">✓ VERIFIED</span>' : '';
 }
 function userLink(u) {
-  // u: {id, username, badge} — link to the member profile.
-  return '<a href="#/members/' + u.id + '">' + esc(u.username) + '</a>' + badgeHtml(u.badge);
+  // u: {id, username, badge, online?} — link to the member profile.
+  return '<a href="#/members/' + u.id + '">' + esc(u.username) + '</a>' + badgeHtml(u.badge) + onlineDot(u.online);
+}
+function onlineDot(online) {
+  // Green dot when the member was seen in the last 5 minutes.
+  return online ? '<span class="online-dot" title="Online now"></span>' : '';
 }
 function imgHtml(item, cls) {
   if (item && item.image) {
@@ -330,7 +334,7 @@ ROUTES.giveaway = async function () {
     (board && board.entered.length
       ? '<p class="muted">' + board.totalEntered + ' member' + (board.totalEntered === 1 ? '' : 's') + ' in the draw.</p>' +
         board.entered.map(e =>
-          '<div class="spread"><span><strong>' + esc(e.username) + '</strong>' + badgeHtml(e.badge) +
+          '<div class="spread"><span><strong>' + esc(e.username) + '</strong>' + onlineDot(e.online) + badgeHtml(e.badge) +
           (e.id === me.id ? ' <span class="badge">YOU</span>' : '') + '</span>' +
           '<span class="muted small">' + e.count + ' invites</span></div>').join('')
       : '<p class="muted">Nobody is in yet — invite ' + needed + ' friends and be the first name on the board.</p>') +
@@ -675,7 +679,7 @@ ROUTES.chat = async function () {
         if (m.hidden) return;
         const div = document.createElement('div');
         div.className = 'chat-msg';
-        div.innerHTML = '<div class="meta">' + userLink({ id: m.user_id, username: m.username, badge: null }) +
+        div.innerHTML = '<div class="meta">' + userLink({ id: m.user_id, username: m.username, badge: null, online: m.online }) +
           ' · ' + timeAgo(m.created_at) +
           (isAdmin() ? ' <button class="btn ghost" data-del="' + m.id + '" style="min-height:28px;padding:2px 8px;font-size:.8rem">Delete</button>' : '') +
           ' <button class="btn ghost" data-report-chat="' + m.id + '" style="min-height:28px;padding:2px 8px;font-size:.8rem">Report</button></div>' +
@@ -1207,7 +1211,7 @@ async function dmConversationView(userId) {
 ROUTES.friends = async function () {
   const r = await get('/api/friends');
   const row = (f, actions) =>
-    '<div class="card"><div class="spread"><div><strong>' + esc(f.user.username) + '</strong>' + badgeHtml(f.user.badge) + verifiedBadge(f.user) + '</div>' +
+    '<div class="card"><div class="spread"><div><strong>' + esc(f.user.username) + '</strong>' + onlineDot(f.user.online) + badgeHtml(f.user.badge) + verifiedBadge(f.user) + '</div>' +
     '<div class="row">' + actions + '</div></div></div>';
   view.innerHTML =
     '<div class="card"><h1>Friends</h1>' +
@@ -1248,7 +1252,7 @@ ROUTES.members = async function (arg) {
   const load = async q => {
     const r = await get('/api/members' + (q ? '?q=' + encodeURIComponent(q) : ''));
     $('#memberList').innerHTML = r.members.length ? r.members.map(m =>
-      '<div class="card"><div class="spread"><div><a href="#/members/' + m.id + '"><strong>' + esc(m.username) + '</strong></a>' +
+      '<div class="card"><div class="spread"><div><a href="#/members/' + m.id + '"><strong>' + esc(m.username) + '</strong></a>' + onlineDot(m.online) +
       badgeHtml(m.badge) + verifiedBadge(m) + '<div class="muted small">Joined ' + esc(new Date(m.joined).toLocaleDateString()) + '</div></div>' +
       '<a class="btn secondary" href="#/members/' + m.id + '">Profile</a></div></div>').join('')
       : '<p class="muted">No members found.</p>';
@@ -1269,8 +1273,8 @@ async function memberProfileView(id) {
     else friendBtn = '<button class="btn danger" id="removeFriendBtn">Remove friend</button>';
   }
   view.innerHTML =
-    '<div class="card"><h1>' + esc(m.username) + badgeHtml(m.badge) + verifiedBadge(m) + '</h1>' +
-    '<p class="muted">Joined ' + esc(new Date(m.joined).toLocaleDateString()) + ' · ' + m.friendCount + ' friend' + (m.friendCount === 1 ? '' : 's') + '</p>' +
+    '<div class="card"><h1>' + esc(m.username) + onlineDot(m.online) + badgeHtml(m.badge) + verifiedBadge(m) + '</h1>' +
+    '<p class="muted">' + (m.online ? 'Online now · ' : '') + 'Joined ' + esc(new Date(m.joined).toLocaleDateString()) + ' · ' + m.friendCount + ' friend' + (m.friendCount === 1 ? '' : 's') + '</p>' +
     (r.blockedByMe ? '<p class="muted">You blocked this member.</p>' : '') +
     (r.blockedMe ? '<p class="muted">This member blocked you.</p>' : '') +
     '<div class="row">' +
@@ -1405,7 +1409,7 @@ ROUTES.admin = async function () {
   const loadMembers = async () => {
     const r = await get('/api/admin/members');
     $('#memberAdminList').innerHTML = r.members.map(m =>
-      '<div class="card"><div class="spread"><div><strong>' + esc(m.username) + '</strong>' + badgeHtml(m.badge) + verifiedBadge(m) +
+      '<div class="card"><div class="spread"><div><strong>' + esc(m.username) + '</strong>' + onlineDot(m.online) + badgeHtml(m.badge) + verifiedBadge(m) +
       '<div class="muted small">' + esc(m.email) + ' · sub: ' + esc(m.subscription) + (m.warnCount ? ' · warnings: ' + m.warnCount : '') + (m.banned ? ' · BANNED' : '') + '</div></div>' +
       '<div class="row">' +
       '<button class="btn secondary" data-warn="' + m.id + '">Warn</button>' +
@@ -1422,7 +1426,7 @@ ROUTES.admin = async function () {
     $('#refAdminList').innerHTML =
       '<p class="muted">' + r.enteredCount + ' member' + (r.enteredCount === 1 ? '' : 's') + ' in the raffle (needs ' + r.needed + ' invites).</p>' +
       r.rows.map(m =>
-        '<div class="spread"><span><strong>' + esc(m.username) + '</strong>' + badgeHtml(m.badge) +
+        '<div class="spread"><span><strong>' + esc(m.username) + '</strong>' + onlineDot(m.online) + badgeHtml(m.badge) +
         '<span class="muted small"> · ' + esc(m.email) + (m.referredBy ? ' · invited by ' + esc(m.referredBy) : ' · no referrer') + (m.verified ? '' : ' · NOT VERIFIED') + '</span></span>' +
         '<span><strong>' + m.referralCount + '</strong> invites' + (m.entered ? ' · <span class="badge">IN RAFFLE</span>' : '') + '</span></div>').join('');
     $('#drawList').innerHTML = (b && b.draws && b.draws.length)
@@ -1513,5 +1517,10 @@ ROUTES.admin = async function () {
   await loadMe();
   await refreshUnread();
   every(60000, refreshUnread);
+  // Heartbeat: tell the server we're still here every minute, so the
+  // online dot stays accurate while signed in.
+  const heartbeat = () => { if (loggedIn()) post('/api/presence/heartbeat', {}).catch(() => {}); };
+  heartbeat();
+  every(60000, heartbeat);
   route();
 })();

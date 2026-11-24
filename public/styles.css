@@ -104,6 +104,13 @@ label { display: block; font-weight: 600; margin: 12px 0 4px; }
 .badge.verified { background: var(--accent); color: #06130a; }
 .badge.ballpark { background: var(--warn); color: #241a00; }
 
+/* Online dot — green when the member was seen in the last 5 minutes. */
+.online-dot {
+  display: inline-block; width: 9px; height: 9px; border-radius: 50%;
+  background: #22c55e; vertical-align: middle; margin-left: 5px;
+  box-shadow: 0 0 0 2px var(--surface);
+}
+
 /* Layout */
 .view { padding: 16px 12px calc(var(--nav-h) + 24px); max-width: 860px; margin: 0 auto; width: 100%; }
 .view.nonav { padding-bottom: 24px; }
