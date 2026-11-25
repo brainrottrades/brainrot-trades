@@ -103,10 +103,6 @@ function googleAuthHref() {
   const r = storedRef();
   return '/api/auth/google' + (r ? '?ref=' + encodeURIComponent(r) : '');
 }
-function facebookAuthHref() {
-  const r = storedRef();
-  return '/api/auth/facebook' + (r ? '?ref=' + encodeURIComponent(r) : '');
-}
 function copyText(t) {
   if (navigator.clipboard && navigator.clipboard.writeText) return navigator.clipboard.writeText(t);
   const ta = document.createElement('textarea');
@@ -290,7 +286,7 @@ ROUTES.home = async function () {
       '</div>' : '') +
     '<div class="card"><h2>How it works</h2><ol class="steps">' +
     '<li><strong>Sign up</strong> — pick a username and email.</li>' +
-    '<li><strong>Verify</strong> — sign in with Google or Facebook and you\'re verified instantly, or sign up with email and the owner approves you.</li>' +
+    '<li><strong>Verify</strong> — sign in with Google and you\'re verified instantly, or sign up with email and the owner approves you.</li>' +
     '<li><strong>' + (state.cfg && state.cfg.trialAvailable ? 'Subscribe — first month free, then $' + price + '/month' : 'Subscribe $' + price + '/month') + '</strong> — PayPal, cancel anytime. Full access right away.</li>' +
     '</ol></div>' +
     '<div class="card"><h2>Stay safe</h2><p class="muted">Check the price before you trade. Use a middleman you trust. Never send money first to a stranger. '
@@ -366,20 +362,17 @@ ROUTES.signup = async function () {
   const googleBtn = (state.cfg && state.cfg.googleAuthEnabled)
     ? '<p><a class="btn block" href="' + googleAuthHref() + '">Continue with Google</a></p>'
     : '';
-  const facebookBtn = (state.cfg && state.cfg.facebookAuthEnabled)
-    ? '<p><a class="btn block" href="' + facebookAuthHref() + '">Continue with Facebook</a></p>'
-    : '';
-  const socialNote = (googleBtn || facebookBtn)
-    ? '<p class="form-note">Google or Facebook verifies your email instantly — no code, no waiting. No Google or Facebook account? Sign up below instead.</p>'
+    const socialNote = (googleBtn)
+    ? '<p class="form-note">Google verifies your email instantly — no code, no waiting. No Google account? Sign up below instead.</p>'
     : '';
   view.innerHTML = authCard('Sign up',
-    refNote + googleBtn + facebookBtn + socialNote +
+    refNote + googleBtn + socialNote +
     '<form id="signupForm">' +
     '<label for="suUser">Username</label><input id="suUser" required minlength="3" maxlength="24" autocomplete="username" placeholder="Your display name">' +
     '<label for="suEmail">Email</label><input id="suEmail" type="email" required autocomplete="email" placeholder="you@example.com">' +
     '<label for="suPass">Password</label><input id="suPass" type="password" required minlength="6" autocomplete="new-password" placeholder="At least 6 characters">' +
     '<p style="margin-top:12px"><button class="btn block" type="submit">Create account</button></p>' +
-    '<p class="form-note">No Google or Facebook account? Your account waits for the owner to approve it, then subscribe $' + (state.cfg ? state.cfg.priceUsd : 3) + '/month for full access.</p>' +
+    '<p class="form-note">No Google account? Your account waits for the owner to approve it, then subscribe $' + (state.cfg ? state.cfg.priceUsd : 3) + '/month for full access.</p>' +
     '<p class="form-note">Already have an account? <a href="#/login">Log in</a></p>' +
     '<div id="formMsg"></div></form>');
   $('#signupForm').addEventListener('submit', async e => {
@@ -398,16 +391,11 @@ ROUTES.signup = async function () {
 ROUTES.login = async function (note) {
   const params = new URLSearchParams(location.hash.split('?')[1] || '');
   const googleFailed = params.get('google') === 'failed';
-  const facebookFailed = params.get('facebook') === 'failed';
-  const googleBtn = (state.cfg && state.cfg.googleAuthEnabled)
+    const googleBtn = (state.cfg && state.cfg.googleAuthEnabled)
     ? '<p><a class="btn block" href="' + googleAuthHref() + '">Continue with Google</a></p>' : '';
-  const facebookBtn = (state.cfg && state.cfg.facebookAuthEnabled)
-    ? '<p><a class="btn block" href="' + facebookAuthHref() + '">Continue with Facebook</a></p>' : '';
-  view.innerHTML = authCard('Log in',
-    (googleFailed ? '<div class="error">Google sign-in did not work. Try again, or log in with your email instead.</div>' : '') +
-    (facebookFailed ? '<div class="error">Facebook sign-in did not work. Try again, or log in with your email instead.</div>' : '') +
-    (typeof note === 'string' && note ? '<div class="error">' + esc(note) + '</div>' : '') +
-    googleBtn + facebookBtn +
+      (googleFailed ? '<div class="error">Google sign-in did not work. Try again, or log in with your email instead.</div>' : '') +
+        (typeof note === 'string' && note ? '<div class="error">' + esc(note) + '</div>' : '') +
+    googleBtn +
     '<form id="loginForm">' +
     '<label for="liEmail">Email</label><input id="liEmail" type="email" required autocomplete="email">' +
     '<label for="liPass">Password</label><input id="liPass" type="password" required autocomplete="current-password">' +
