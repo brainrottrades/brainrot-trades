@@ -1362,7 +1362,7 @@ ROUTES.admin = async function () {
   const items = await ensureItems();
   view.innerHTML =
     '<div class="card"><h1>Admin panel</h1>' +
-    '<p class="muted">Owner: ' + esc('pgevil22@gmail.com') + ' · Co-owner: amber_fenton@yahoo.com · Admin: vcadorette@icloud.com. '
+    '<p class="muted">Owner: ' + esc('pgevil22@gmail.com') + ' · Admins: vcadorette@icloud.com, aross033095@gmail.com. '
     + 'You can never warn or ban the owner, a co-owner cannot warn or ban another co-owner, and only the owner or a co-owner can warn or ban an admin.</p>' +
     '<div class="grid two">' +
     '<div class="card"><strong>Members</strong><div class="price">' + stats.members + '</div></div>' +
