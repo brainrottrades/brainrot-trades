@@ -82,6 +82,13 @@ const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '';
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || '';
 const GOOGLE_REDIRECT_URI = process.env.GOOGLE_REDIRECT_URI || 'https://brainrot-trades.onrender.com/api/auth/google/callback';
 const googleAuthEnabled = !!(GOOGLE_CLIENT_ID && GOOGLE_CLIENT_SECRET);
+// Facebook Login (OAuth 2.0). Set FACEBOOK_APP_ID / FACEBOOK_APP_SECRET in
+// Render env vars; without them the Facebook button is hidden. The Meta app
+// must allow the /api/auth/facebook/callback redirect URI for each host.
+const FACEBOOK_APP_ID = process.env.FACEBOOK_APP_ID || '';
+const FACEBOOK_APP_SECRET = process.env.FACEBOOK_APP_SECRET || '';
+const FACEBOOK_GRAPH_VERSION = process.env.FACEBOOK_GRAPH_VERSION || 'v22.0';
+const facebookAuthEnabled = !!(FACEBOOK_APP_ID && FACEBOOK_APP_SECRET);
 
 const brainrotsData = JSON.parse(fs.readFileSync(path.join(ROOT, 'data', 'brainrots.json'), 'utf8'));
 
@@ -277,6 +284,9 @@ CREATE TABLE IF NOT EXISTS sale_comments (
 // The ALTER is idempotent — it throws if the column already exists.
 try { db.exec('ALTER TABLE users ADD COLUMN google_id TEXT'); } catch (e) { /* column already exists */ }
 db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_users_google_id ON users(google_id)');
+// Facebook Login: link a Facebook account id to a user, same pattern as Google.
+try { db.exec('ALTER TABLE users ADD COLUMN facebook_id TEXT'); } catch (e) { /* column already exists */ }
+db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_users_facebook_id ON users(facebook_id)');
 try { db.exec('ALTER TABLE sale_listings ADD COLUMN mutation TEXT'); } catch (e) { /* column already exists */ }
 try { db.exec('ALTER TABLE sale_listings ADD COLUMN custom_name TEXT'); } catch (e) { /* column already exists */ }
 try { db.exec('ALTER TABLE subscriptions ADD COLUMN plan_id TEXT'); } catch (e) { /* column already exists */ }
@@ -658,6 +668,7 @@ app.get('/api/config', (req, res) => {
     paypalSecretConfigured: !!PAYPAL_SECRET,
     emailConfigured: !!transporter || !!SENDGRID_API_KEY,
     googleAuthEnabled,
+    facebookAuthEnabled,
   });
 });
 app.get('/api/me', async (req, res) => {
@@ -887,6 +898,110 @@ app.get('/api/auth/google/callback', async (req, res) => {
     res.redirect(origin + '/#/prices');
   } catch (e) {
     console.error('[google] callback failed:', e.message);
+    fail();
+  }
+});
+// ---------- Facebook Login (OAuth 2.0) ----------
+// Facebook returns an app-scoped user id and, when the member grants the
+// email permission, their Facebook email. Brainrot Trades accounts need an
+// email for the account and free-trial tracking, so a Facebook profile that
+// does not share an email cannot finish sign-in here.
+function facebookCallbackFor(req) {
+  const host = String(req.get('host') || '').split(':')[0].toLowerCase();
+  const allowed = GOOGLE_HOSTS.includes(host) ? host : 'fnbrainrotmarket.com';
+  const origin = 'https://' + allowed;
+  return { origin, redirectUri: origin + '/api/auth/facebook/callback' };
+}
+function facebookAuthUrl(state, redirectUri) {
+  const q = new URLSearchParams({
+    client_id: FACEBOOK_APP_ID, redirect_uri: redirectUri,
+    response_type: 'code', scope: 'public_profile,email', state,
+  });
+  return `https://www.facebook.com/${FACEBOOK_GRAPH_VERSION}/dialog/oauth?` + q.toString();
+}
+app.get('/api/auth/facebook', (req, res) => {
+  if (!facebookAuthEnabled) return res.status(400).send('Facebook sign-in is not configured on this server.');
+  const state = crypto.randomBytes(16).toString('hex');
+  db.prepare('DELETE FROM oauth_states WHERE created_at < ?').run(new Date(Date.now() - 30 * 60 * 1000).toISOString());
+  db.prepare('INSERT INTO oauth_states (state, created_at) VALUES (?,?)').run(state, nowIso());
+  const { redirectUri } = facebookCallbackFor(req);
+  const cookies = [`bt_oauth_state=${state}; HttpOnly; Path=/; Max-Age=1800; SameSite=Lax`];
+  const refParam = String(req.query.ref || '').trim();
+  if (refParam) cookies.push(`bt_ref=${encodeURIComponent(refParam)}; Path=/; Max-Age=1800; SameSite=Lax`);
+  res.setHeader('Set-Cookie', cookies);
+  res.redirect(facebookAuthUrl(state, redirectUri));
+});
+app.get('/api/auth/facebook/callback', async (req, res) => {
+  const { origin, redirectUri } = facebookCallbackFor(req);
+  const fail = why => { if (why) console.error('[facebook] sign-in failed:', why); return res.redirect(origin + '/#/login?facebook=failed'); };
+  try {
+    if (!facebookAuthEnabled) return fail('facebook auth not configured');
+    if (req.query.error || req.query.error_code) return fail('facebook returned error: ' + (req.query.error_description || req.query.error || req.query.error_code));
+    const stateCookie = (req.headers.cookie || '').split(';').map(s => s.trim())
+      .find(s => s.startsWith('bt_oauth_state='));
+    const stateVal = stateCookie ? decodeURIComponent(stateCookie.slice('bt_oauth_state='.length)) : null;
+    const qState = req.query.state;
+    const dbState = qState ? db.prepare('SELECT state FROM oauth_states WHERE state = ?').get(qState) : null;
+    if (dbState) db.prepare('DELETE FROM oauth_states WHERE state = ?').run(qState);
+    const stateOk = (stateVal && stateVal === qState) || !!dbState;
+    if (!stateOk || !req.query.code) return fail('state check failed (cookie ' + (stateVal ? 'present' : 'missing') + ', server record ' + (dbState ? 'found' : 'not found') + ')');
+    res.setHeader('Set-Cookie', ['bt_oauth_state=; HttpOnly; Path=/; Max-Age=0; SameSite=Lax', 'bt_ref=; Path=/; Max-Age=0; SameSite=Lax']);
+    const refCookie = (req.headers.cookie || '').split(';').map(s => s.trim()).find(s => s.startsWith('bt_ref='));
+    const refName = refCookie ? decodeURIComponent(refCookie.slice('bt_ref='.length)) : null;
+    const tokenUrl = new URL(`https://graph.facebook.com/${FACEBOOK_GRAPH_VERSION}/oauth/access_token`);
+    tokenUrl.searchParams.set('client_id', FACEBOOK_APP_ID);
+    tokenUrl.searchParams.set('redirect_uri', redirectUri);
+    tokenUrl.searchParams.set('client_secret', FACEBOOK_APP_SECRET);
+    tokenUrl.searchParams.set('code', String(req.query.code));
+    const tokenRes = await fetch(tokenUrl, { signal: AbortSignal.timeout(15000) });
+    if (!tokenRes.ok) { console.error('[facebook] token exchange failed:', tokenRes.status); return fail(); }
+    const tokens = await tokenRes.json();
+    if (!tokens || !tokens.access_token) return fail('facebook token exchange did not return an access token');
+    const debugUrl = new URL(`https://graph.facebook.com/${FACEBOOK_GRAPH_VERSION}/debug_token`);
+    debugUrl.searchParams.set('input_token', tokens.access_token);
+    debugUrl.searchParams.set('access_token', `${FACEBOOK_APP_ID}|${FACEBOOK_APP_SECRET}`);
+    const debugRes = await fetch(debugUrl, { signal: AbortSignal.timeout(15000) });
+    if (!debugRes.ok) { console.error('[facebook] token debug failed:', debugRes.status); return fail(); }
+    const debug = await debugRes.json();
+    const tokenInfo = debug && debug.data;
+    if (!tokenInfo || !tokenInfo.is_valid || String(tokenInfo.app_id) !== String(FACEBOOK_APP_ID)) return fail('facebook token did not validate for this app');
+    const meUrl = new URL(`https://graph.facebook.com/${FACEBOOK_GRAPH_VERSION}/me`);
+    meUrl.searchParams.set('fields', 'id,name,email');
+    meUrl.searchParams.set('access_token', tokens.access_token);
+    const meRes = await fetch(meUrl, { signal: AbortSignal.timeout(15000) });
+    if (!meRes.ok) { console.error('[facebook] profile fetch failed:', meRes.status); return fail(); }
+    const profile = await meRes.json();
+    if (!profile || !profile.id) return fail('facebook profile did not include an id');
+    if (tokenInfo.user_id && String(tokenInfo.user_id) !== String(profile.id)) return fail('facebook token user did not match profile');
+    const em = profile.email ? String(profile.email).toLowerCase() : '';
+    if (!em || !EMAIL_RE.test(em)) return fail('facebook profile did not include a usable email');
+    const fbId = String(profile.id);
+    let u = db.prepare('SELECT * FROM users WHERE facebook_id = ?').get(fbId)
+      || db.prepare('SELECT * FROM users WHERE email = ?').get(em);
+    if (u) {
+      if (u.banned) return fail('account banned');
+      if (u.facebook_id && String(u.facebook_id) !== fbId) return fail('email already linked to another Facebook account');
+      db.prepare('UPDATE users SET facebook_id = ?, verified = 1 WHERE id = ?').run(fbId, u.id);
+      u = db.prepare('SELECT * FROM users WHERE id = ?').get(u.id);
+    } else {
+      let base = (em.split('@')[0] || profile.name || 'member').replace(/[^A-Za-z0-9_.-]/g, '').slice(0, 20) || 'member';
+      if (base.length < 3) base = 'member' + base;
+      let username = base, n = 1;
+      while (db.prepare('SELECT 1 FROM users WHERE username = ?').get(username)) username = base + (n++);
+      const salt = crypto.randomBytes(16).toString('hex');
+      let referredBy = null;
+      if (refName) {
+        const referrer = findReferrer(refName);
+        if (referrer) referredBy = referrer.id;
+      }
+      const info = db.prepare('INSERT INTO users (username, email, password_hash, password_salt, facebook_id, verified, referred_by, last_seen, created_at) VALUES (?,?,?,?,?,?,?,?,?)')
+        .run(username, em, hashPassword(crypto.randomBytes(32).toString('hex'), salt), salt, fbId, 1, referredBy, nowIso(), nowIso());
+      u = db.prepare('SELECT * FROM users WHERE id = ?').get(Number(info.lastInsertRowid));
+    }
+    setSession(res, u.id);
+    res.redirect(origin + '/#/prices');
+  } catch (e) {
+    console.error('[facebook] callback failed:', e.message);
     fail();
   }
 });
@@ -1683,6 +1798,10 @@ app.get('/api/admin/stats', requireAdmin, (req, res) => {
 // Privacy policy page (also the URL Google needs to publish the sign-in app).
 app.get('/privacy', (req, res) => {
   res.sendFile(path.join(ROOT, 'public', 'privacy.html'));
+});
+// Facebook Login asks for a data-deletion instructions URL.
+app.get('/data-deletion', (req, res) => {
+  res.sendFile(path.join(ROOT, 'public', 'data-deletion.html'));
 });
 
 // ---------- SPA fallback ----------
