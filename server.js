@@ -62,7 +62,7 @@ const OWNER_EMAIL = (adminsCfg.ownerEmail || 'pgevil22@gmail.com').toLowerCase()
 // Set SENDGRID_API_KEY (+ optional SENDGRID_FROM) in Render env vars.
 const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY || '';
 const SENDGRID_FROM = process.env.SENDGRID_FROM || (emailCfg && emailCfg.from) || 'pgevil22@gmail.com';
-const CO_OWNER_EMAILS = new Set((adminsCfg.coOwnerEmails || ['amber_fenton@yahoo.com']).map(e => e.toLowerCase()));
+const CO_OWNER_EMAILS = new Set((adminsCfg.coOwnerEmails || []).map(e => e.toLowerCase()));
 const ADMIN_EMAILS = new Set((adminsCfg.adminEmails || []).map(e => e.toLowerCase()));
 // Owner, co-owner and admin accounts are pre-authorized: they verify
 // instantly on sign-up (no code, no approval) and get free access.
