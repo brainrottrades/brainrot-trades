@@ -258,15 +258,15 @@ ROUTES.home = async function () {
     ['Trade board', 'Post what you have and what you want — other members come to you.', 'trades'],
     ['For Sale', 'List brainrots for real money with your own price and picture.', 'sales'],
     ['Help forum', 'Ask for help or answer other players — the owner and admins read every post.', 'help'],
-    ['Verified members', 'Every member verifies their email. Owners, co-owners and admins are badged.'],
+    ['Verified members', 'Every member verifies their email. The owner and admins are badged.'],
     ['Owner moderation & safety', 'Scam checklist before every deal, report and block buttons, and the owner reviews reports.'],
   ];
   view.innerHTML =
     '<section class="hero card"><img class="hero-icon" src="/img/skibidi-toilet-v2.png" alt="Skibidi Toilet">' +
     '<h1>Brainrot Trades</h1>' +
     '<p class="muted">Fortnite Steal the Brainrot (Creative map 3225-0366-8885) — Eternals only. Prices, trades, rarity and a safe place to buy, sell and trade. Not the Roblox game.</p>' +
-    '<p class="price-tag">$' + price + '/month</p>' +
-    '<p class="muted">Everything in the app, one price. Cancel anytime.</p>' +
+    (hasAccess() ? '<p class="muted">Full access is active on your account.</p>' : '<p class="price-tag">$' + price + '/month</p>' +
+    '<p class="muted">Everything in the app, one price. Cancel anytime.</p>') +
     (hasAccess()
       ? '<p><a class="btn" href="#/prices">Open the price list</a> <a class="btn secondary" href="#/sales">Sell a brainrot</a></p>'
       : '<p><a class="btn" href="#/signup">Sign up</a> <a class="btn secondary" href="#/login">Log in</a></p>') +
@@ -287,7 +287,7 @@ ROUTES.home = async function () {
     '<div class="card"><h2>How it works</h2><ol class="steps">' +
     '<li><strong>Sign up</strong> — pick a username and email.</li>' +
     '<li><strong>Verify</strong> — sign in with Google and you\'re verified instantly, or sign up with email and the owner approves you.</li>' +
-    '<li><strong>' + (state.cfg && state.cfg.trialAvailable ? 'Subscribe — first month free, then $' + price + '/month' : 'Subscribe $' + price + '/month') + '</strong> — PayPal, cancel anytime. Full access right away.</li>' +
+    (hasAccess() ? '<li><strong>Full access</strong> — your account is active, so everything is open.</li>' : '<li><strong>' + (state.cfg && state.cfg.trialAvailable ? 'Subscribe — first month free, then $' + price + '/month' : 'Subscribe $' + price + '/month') + '</strong> — PayPal, cancel anytime. Full access right away.</li>') +
     '</ol></div>' +
     '<div class="card"><h2>Stay safe</h2><p class="muted">Check the price before you trade. Use a middleman you trust. Never send money first to a stranger. '
     + 'Every listing and message has a report button, and the owner reviews reports.</p></div>' +
