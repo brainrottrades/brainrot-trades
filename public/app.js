@@ -251,7 +251,7 @@ ROUTES.home = async function () {
   try { preview = (await get('/api/preview')).items; } catch (e) { preview = []; }
   const price = state.cfg ? state.cfg.priceUsd : 3;
   const feats = [
-    ['Price list', 'All 76 Eternal brainrots priced, with pictures — every brainrot has a ballpark price.'],
+    ['Price list', 'All 74 Eternal brainrots priced, with pictures — every brainrot has a ballpark price.'],
     ['Trade checker', 'Check any brainrot by mutation and traits, and compare two brainrots to see if a trade is worth it.'],
     ['Rarity chart', 'Every Eternal ranked least rarest to rarest, plus Absolute and GOAT rarities.'],
     ['Live chat', 'Talk with other players and organise trades in real time.'],
@@ -281,8 +281,8 @@ ROUTES.home = async function () {
         '<div class="price">' + moneyRange(i.typicalLow, i.typicalHigh) + '</div>' +
         (i.ballpark ? ' <span class="badge ballpark">BALLPARK</span>' : '') +
         '</div></div>').join('') +
-      '</div><p class="muted small">Sample only — the full list of 76 brainrots is for members.</p>' +
-      (hasAccess() ? '' : '<p><a class="btn" href="#/signup">See all 76 — ' + (state.cfg && state.cfg.trialAvailable ? 'first month free' : 'subscribe $' + price + '/month') + '</a></p>') +
+      '</div><p class="muted small">Sample only — the full list of 74 brainrots is for members.</p>' +
+      (hasAccess() ? '' : '<p><a class="btn" href="#/signup">See all 74 — ' + (state.cfg && state.cfg.trialAvailable ? 'first month free' : 'subscribe $' + price + '/month') + '</a></p>') +
       '</div>' : '') +
     '<div class="card"><h2>How it works</h2><ol class="steps">' +
     '<li><strong>Sign up</strong> — pick a username and email.</li>' +
@@ -550,7 +550,7 @@ ROUTES.prices = async function () {
   const items = await ensureItems();
   view.innerHTML =
     '<div class="card"><h1>Price list</h1>' +
-    '<p class="muted">All 76 Eternal brainrots. Prices are sellers’ asking prices in USD (Nov 2026 snapshot), not sold prices. '
+    '<p class="muted">All 74 Eternal brainrots. Prices are sellers’ asking prices in USD (Nov 2026 snapshot), not sold prices. '
     + '“Ballpark” means an estimate — no confirmed listing was found.</p>' +
     '<div class="toolbar"><input id="q" type="search" placeholder="Search brainrots…" aria-label="Search brainrots"></div>' +
     '<div id="list" class="grid two"></div></div>' + finePrintHtml();
