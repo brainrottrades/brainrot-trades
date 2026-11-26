@@ -393,7 +393,8 @@ ROUTES.login = async function (note) {
   const googleFailed = params.get('google') === 'failed';
     const googleBtn = (state.cfg && state.cfg.googleAuthEnabled)
     ? '<p><a class="btn block" href="' + googleAuthHref() + '">Continue with Google</a></p>' : '';
-      (googleFailed ? '<div class="error">Google sign-in did not work. Try again, or log in with your email instead.</div>' : '') +
+  view.innerHTML = authCard('Log in',
+    (googleFailed ? '<div class="error">Google sign-in did not work. Try again, or log in with your email instead.</div>' : '') +
         (typeof note === 'string' && note ? '<div class="error">' + esc(note) + '</div>' : '') +
     googleBtn +
     '<form id="loginForm">' +
