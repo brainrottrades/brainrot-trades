@@ -1362,62 +1362,6 @@
    "rarityPct": null
   },
   {
-   "id": "wreckspire-roller",
-   "name": "Wreckspire Roller",
-   "typicalLow": 5.0,
-   "typicalHigh": 18.0,
-   "rangeLow": 5.0,
-   "rangeHigh": 17.55,
-   "ballpark": false,
-   "variants": {
-    "Void": {
-     "low": 5.0,
-     "high": 5.0,
-     "traits": null
-    },
-    "Default": {
-     "low": 10.0,
-     "high": 10.0,
-     "traits": null
-    }
-   },
-   "image": "wreckspire-roller.webp",
-   "rarityPct": 3.0
-  },
-  {
-   "id": "cornzilla",
-   "name": "Cornzilla",
-   "typicalLow": 10.0,
-   "typicalHigh": 13.0,
-   "rangeLow": 1.0,
-   "rangeHigh": 13.0,
-   "ballpark": false,
-   "variants": {
-    "Heaven": {
-     "low": 10.0,
-     "high": 10.0,
-     "traits": null
-    },
-    "Summer": {
-     "low": 13.0,
-     "high": 13.0,
-     "traits": null
-    },
-    "Neon": {
-     "low": 10.0,
-     "high": 10.0,
-     "traits": null
-    },
-    "Aqua": {
-     "low": 1.0,
-     "high": 1.0,
-     "traits": null
-    }
-   },
-   "image": "cornzilla.webp",
-   "rarityPct": 2.0
-  },
-  {
    "id": "pavonaccio",
    "name": "Pavonaccio",
    "typicalLow": 4.0,
@@ -2264,14 +2208,6 @@
   "note": "extraTraits = trait count above the traits already counted in a confirmed variant listing. See ~/workspace/brainrot-prices/research/traits.md."
  },
  "rarityEternal": [
-  {
-   "name": "Wreckspire Roller",
-   "pct": 3.0
-  },
-  {
-   "name": "Cornzilla",
-   "pct": 2.0
-  },
   {
    "name": "Pavonaccio",
    "pct": 0.2
